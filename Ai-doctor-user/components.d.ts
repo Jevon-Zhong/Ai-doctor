@@ -14,6 +14,8 @@ declare module 'vue' {
     ChatWelcome: typeof import('./src/components/ChatWelcome.vue')['default']
     ChatWindow: typeof import('./src/components/ChatWindow.vue')['default']
     ElButton: typeof import('element-plus/es')['ElButton']
+    ElCollapse: typeof import('element-plus/es')['ElCollapse']
+    ElCollapseItem: typeof import('element-plus/es')['ElCollapseItem']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     Knowledge: typeof import('./src/components/Knowledge.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
