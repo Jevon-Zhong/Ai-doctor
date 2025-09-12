@@ -6,6 +6,7 @@
     </div>
     <ChatInput />
     <Knowledge />
+    <UserLogin />
 </template>
 
 <script setup lang="ts">
@@ -14,6 +15,7 @@ import ChatWindow from './ChatWindow.vue';
 import ChatWelcome from './ChatWelcome.vue';
 import ChatInput from './ChatInput.vue';
 import Knowledge from './Knowledge.vue';
+import UserLogin from './UserLogin.vue';
 </script>
 
 <style scoped lang="less">

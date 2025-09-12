@@ -22,7 +22,7 @@
 import { ref } from 'vue'
 import { CloseBold } from "@element-plus/icons-vue";
 const uploadFileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf'
-const knowledgePopup = ref(true)
+const knowledgePopup = ref(false)
 </script>
 
 <style scoped lang="less">
