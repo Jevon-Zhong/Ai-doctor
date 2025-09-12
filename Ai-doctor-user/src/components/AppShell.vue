@@ -1,15 +1,17 @@
 <template>
     <div class="chat-layout">
         <ChatHistory />
-        <!-- <ChatWindow /> -->
-        <ChatWelcome />
+        <ChatWindow />
+        <!-- <ChatWelcome /> -->
     </div>
+    <ChatInput />
 </template>
 
 <script setup lang="ts">
 import ChatHistory from './ChatHistory.vue';
 import ChatWindow from './ChatWindow.vue';
 import ChatWelcome from './ChatWelcome.vue';
+import ChatInput from './ChatInput.vue';
 </script>
 
 <style scoped lang="less">
