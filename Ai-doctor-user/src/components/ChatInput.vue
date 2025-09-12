@@ -9,7 +9,7 @@
                 <div class="upload-file-item">
                     <img src="../assets/docx-icon.png" alt="">
                     <div class="box">
-                        <span class="title">文档标题</span>
+                        <span class="title hidden-text">文档标题文档标题文档标题文档标题</span>
                         <span class="size">32kb</span>
                     </div>
                     <el-icon :size="11" class="delete-file">

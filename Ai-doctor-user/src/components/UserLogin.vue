@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-const showLoginPopup = ref(true)
+const showLoginPopup = ref(false)
 const activeName = ref('login')
 const phoneNumber = ref('')
 const password = ref('')

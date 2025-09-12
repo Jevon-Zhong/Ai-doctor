@@ -33,4 +33,39 @@ span {
   background: #876aff;
   right: 0;
 }
+
+.hidden-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  box-sizing: border-box;
+}
+
+/* 媒体查询 */
+@media (max-width: 1460px) {
+  .chat-message {
+    max-width: 900px !important;
+  }
+  .chat-input-flex {
+    max-width: 900px !important;
+  }
+}
+@media (max-width: 1160px) {
+  .chat-message {
+    max-width: 700px !important;
+  }
+  .chat-input-flex {
+    max-width: 700px !important;
+  }
+}
+@media (max-width: 1060px) {
+  .chat-message {
+    width: 700px !important;
+  }
+  .chat-input-flex {
+    width: 700px !important;
+  }
+}
 </style>

@@ -3,7 +3,7 @@
         <div class="chat-message">
             <!-- 用户消息 -->
             <div class="user-message">
-                <p>hello</p>
+                <p>hellohellohellohellohellohellohellohello</p>
             </div>
             <!-- 展示文件 -->
             <div class="file-view">
@@ -12,7 +12,7 @@
                         <img src="../assets/docx-icon.png" alt="">
                     </div>
                     <div class="file-name">
-                        <span class="title">文档标题</span>
+                        <span class="title hidden-text">文档标题文档标题文档标题文档标题文档标题文档标题文档标题文档标题</span>
                         <span class="size">32kb</span>
                     </div>
                 </div>
@@ -77,7 +77,7 @@
             border-radius: 10px;
             align-self: flex-end;
             background-color: #fff;
-            max-width: 270px;
+            max-width: 200px;
             margin-left: 5px;
 
             .file-icon {

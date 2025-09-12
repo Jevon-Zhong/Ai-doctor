@@ -4,8 +4,8 @@
             <el-button type="primary">新建对话</el-button>
         </div>
         <div class="dialog-list">
-            <div class="dialog-list-item">
-                hello
+            <div class="dialog-list-item hidden-text">
+                hellohellohellohellohellohello
             </div>
         </div>
         <!-- 个人信息 -->

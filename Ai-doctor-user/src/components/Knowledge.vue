@@ -3,7 +3,7 @@
         <div class="file-data-list">
             <div class="file-data-item" v-for="item in 30">
                 <img src="../assets/docx-icon.png" alt="">
-                <span>文档标题</span>
+                <span class="hidden-text">文档标题文档标题文档标题</span>
                 <el-icon class="delete-file">
                     <CloseBold />
                 </el-icon>
