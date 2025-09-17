@@ -10,7 +10,8 @@ import { JwtService } from '@nestjs/jwt';
 export class UserinfoService {
     constructor(
         //注入模型
-        @InjectModel(UserInfo.name) private userInfoModel: Model<UserInfo>,
+        @InjectModel(UserInfo.name)
+        private userInfoModel: Model<UserInfo>,
         //读环境变量
         private configService: ConfigService,
         //jwt服务

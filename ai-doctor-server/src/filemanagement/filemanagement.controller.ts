@@ -6,6 +6,7 @@ import { Model } from 'mongoose';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer'
 import { extname } from 'path';
+import { FilemanagementService } from './filemanagement.service';
 //处理上传的文件
 const uploadFileInterceptor = FileFieldsInterceptor([{ name: 'file', maxCount: 3 }], {
     storage: diskStorage({
@@ -39,18 +40,26 @@ const uploadFileInterceptor = FileFieldsInterceptor([{ name: 'file', maxCount: 3
 export class FilemanagementController {
     constructor(
         @InjectModel(Filemanagement.name)
-        private readonly filemanagement: Model<Filemanagement>
+        private readonly FilemanagementModel: Model<Filemanagement>,
+        private readonly filemanagementService: FilemanagementService
     ) { }
     //上传文件（知识库）
     @Post('uploadkb')
     @UseGuards(AuthGuard)
     @UseInterceptors(uploadFileInterceptor)
-    uploadFile(
+    async uploadFile(
         @Req() req: { user: { token: string } },
-        @UploadedFiles() files: { file?: Express.Multer.File[] }) {
-        console.log('123')
-        console.log(req.user.token)
+        @UploadedFiles() files: { file: Express.Multer.File[] }) {
+        const userId = req.user.token
+        // console.log(req.user.token)
         console.log(files.file)
+        //处理上传到文档，
+        for (const file of files.file) {
+            //1.读取文档
+            const {rawText, splitDocument} = await this.filemanagementService.readFile(file, 'UB')
+            //2.上传数据库
+            const docID = await this.filemanagementService.uploadFile(file, userId, rawText, 'UB')
+        }
     }
 }
 
