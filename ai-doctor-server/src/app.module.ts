@@ -38,7 +38,5 @@ import { FilemanagementModule } from './filemanagement/filemanagement.module';
     }),
     FilemanagementModule
   ],
-  controllers: [FilemanagementController],
-  providers: [FilemanagementService]
 })
 export class AppModule { }

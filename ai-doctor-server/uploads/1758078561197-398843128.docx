@@ -1,0 +1,21 @@
+docker run - d \
+--name mongodb \
+-p 27017:27017 \
+-v /Users/x2006201/docker-data/mongodb-data \
+-e MONGO_INITDB_ROOT_USERNAME = user \
+-e MONGO_INITDB_ROOT_PASSWORD = user123 \
+mongo:8.0.9
+
+docker run -d \
+  --name mongodb \
+  -p 27017:27017 \
+  -v /Users/x2006201/docker-data/mongodb-data:/data/db \
+  -e MONGO_INITDB_ROOT_USERNAME=user \
+  -e MONGO_INITDB_ROOT_PASSWORD=user123 \
+  mongo:8.0.9
+
+docker run -d \
+  --name redis \
+  -p 6379:6379 \
+  -v /Users/x2006201/docker-data/redis-data:/data/db \
+  redis:8.0
