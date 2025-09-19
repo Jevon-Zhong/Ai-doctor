@@ -2,7 +2,7 @@ import { BadRequestException, Controller, Post, Req, UploadedFiles, UseGuards, U
 import { InjectModel } from '@nestjs/mongoose';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Filemanagement } from './filemanegement.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer'
 import { extname } from 'path';
@@ -52,13 +52,21 @@ export class FilemanagementController {
         @UploadedFiles() files: { file: Express.Multer.File[] }) {
         const userId = req.user.token
         // console.log(req.user.token)
-        console.log(files.file)
-        //处理上传到文档，
+        // console.log(files.file)
+        const documentIds: Types.ObjectId[] = []
+        //处理上传到文档(for遍历处理多文件，推荐使用队列处理)
         for (const file of files.file) {
             //1.读取文档
             const {rawText, splitDocument} = await this.filemanagementService.readFile(file, 'UB')
             //2.上传数据库
             const docID = await this.filemanagementService.uploadFile(file, userId, rawText, 'UB')
+            //3.向量，存储向量数据库
+            const originalname = await this.filemanagementService.vectorStorage(file, splitDocument, userId, docID)
+            console.log(originalname)
+            documentIds.push(docID)
+        }
+        return {
+            result: documentIds
         }
     }
 }
