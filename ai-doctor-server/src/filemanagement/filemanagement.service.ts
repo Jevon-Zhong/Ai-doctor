@@ -6,13 +6,14 @@ import { DocxLoader } from "@langchain/community/document_loaders/fs/docx";
 //文本拆分
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Document } from '@langchain/core/documents';
-import { Model, Types } from 'mongoose';
+import { Collection, Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Filemanagement } from './filemanegement.schema';
 import { ConfigService } from '@nestjs/config';
 import { MilvusClient, DataType } from "@zilliz/milvus2-sdk-node";
 import OpenAI from 'openai';
-import { index } from '@langchain/core/indexing';
+import path from 'path';
+import fs from 'fs'
 @Injectable()
 export class FilemanagementService {
     private client: MilvusClient
@@ -222,5 +223,39 @@ export class FilemanagementService {
             await this.insertData(collectionName, file.originalname, docID, batchDocument, vectorsDocTitle, vectorsDocText)
         }
         return file.originalname
+    }
+
+    //删除知识库指定文件， 删除mongodb，本地，向量数据库
+    async deleteFileKb(userId: string, docId: string) {
+        //删除mongodb数据库文件和本地
+        await this.deleteFile(userId, docId)
+        //删除向量数据库文件
+        //先加载集合
+        const collectionName = `_${userId}`
+        await this.client.loadCollection({ collection_name: collectionName })
+        //删除向量数据库指定文件
+        const res = await this.client.delete({
+            collection_name: collectionName,
+            filter: `docId == '${docId}'`
+        })
+        console.log('删除' + res + '个')
+        //释放集合，以免占用内存
+        await this.client.releaseCollection({ collection_name: collectionName })
+    }
+
+    //删除mongodb，本地
+    async deleteFile(userId: string, docId: string) {
+        //查找文件路径
+        const fileRecord = await this.filemanagementModel.findOne({ userId, _id: docId })
+        if (!fileRecord) throw new BadRequestException('删除失败，找不到该文档')
+        //拼接路径
+        const filePath = path.join(process.cwd(), fileRecord?.filePath as string)
+        //删除服务器上的文件
+        fs.unlinkSync(filePath)
+        //删除mongodb数据库文件
+        await this.filemanagementModel.deleteOne({
+            _id: docId,
+            userId
+        })
     }
 }
