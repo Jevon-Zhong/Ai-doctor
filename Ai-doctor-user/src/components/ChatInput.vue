@@ -24,8 +24,8 @@
                         <img src="../assets/upload-icon.png" alt="">
                     </div>
                 </el-tooltip>
-                <el-input @keydown="handleKeyDown" resize="none" :autosize="{ minRows: 1, maxRows: 4 }" v-model="userMessage" type="textarea"
-                    placeholder="任何健康问题都可以问我，Shift + Enter换行" />
+                <el-input @keydown="handleKeyDown" resize="none" :autosize="{ minRows: 1, maxRows: 4 }"
+                    v-model="userMessage" type="textarea" placeholder="任何健康问题都可以问我，Shift + Enter换行" />
                 <el-button>
                     <img src="../assets/send-icon.png" alt="">
                 </el-button>
@@ -93,6 +93,7 @@ const queryKb = () => {
         border-radius: 20px;
         box-shadow: 0 1px 11px 7px rgba(0, 0, 0, 0.08);
         overflow: hidden;
+
         // 知识库问答
         .el-button {
             width: fit-content;
@@ -190,12 +191,12 @@ const queryKb = () => {
                 }
             }
 
-            /deep/.el-textarea__inner:focus {
+            :deep(.el-textarea__inner:focus) {
                 box-shadow: none;
                 border: none;
             }
 
-            /deep/.el-textarea__inner {
+            :deep(.el-textarea__inner) {
                 box-shadow: none;
                 border: none;
                 font-size: 16px;

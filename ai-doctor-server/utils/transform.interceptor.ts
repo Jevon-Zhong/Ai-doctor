@@ -31,9 +31,9 @@ import {
           let realData = data || [];
           let code = 200;
   
-          if (typeof data === 'object' && data?.message && data?.result) {
+          if (typeof data === 'object' && data?.message) {
             message = data.message;
-            realData = data.result;
+            realData = data.result ?? [];
             if (data?.code) {
               code = data.code;
             }

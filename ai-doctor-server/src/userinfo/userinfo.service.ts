@@ -33,10 +33,7 @@ export class UserinfoService {
                 message: 'SUCCESS',
             }
         } else {
-            return {
-                message: '该账号已存在',
-                code: 422
-            }
+            return { message: '该账号已存在', code: 422 };
         }
     }
 

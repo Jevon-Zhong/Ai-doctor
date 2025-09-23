@@ -54,6 +54,7 @@
         margin-top: 15px;
         max-width: 70%;
         align-self: flex-end;
+
         p {
             line-height: 1.5;
             background-color: #3a71e8;
@@ -112,15 +113,18 @@
         background-color: #fff;
         padding: 10px;
         border-radius: 10px;
-        /deep/.el-collapse-item__title {
+
+        :deep(.el-collapse-item__title) {
             color: blue;
             font-size: 15px;
         }
-        /deep/.el-collapse-item__content {
+
+        :deep(.el-collapse-item__content) {
             background-color: #f7f8fc;
             padding-bottom: 0 !important;
             padding-left: 5px;
         }
+
         .el-collapse {
             margin-bottom: 10px;
         }

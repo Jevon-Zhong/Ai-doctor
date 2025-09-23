@@ -21,6 +21,10 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionFilter())
   //注册全局响应拦截器
   app.useGlobalInterceptors(new TransformInterceptor())
+  //允许跨域
+  app.enableCors({
+    origin: '*'
+  })
   //监听3000
   await app.listen(process.env.PORT ?? 3000);
 }
