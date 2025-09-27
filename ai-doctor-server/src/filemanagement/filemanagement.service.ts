@@ -246,6 +246,7 @@ export class FilemanagementService {
     //删除mongodb，本地
     async deleteFile(userId: string, docId: string) {
         //查找文件路径
+        console.log('path',userId, docId)
         const fileRecord = await this.filemanagementModel.findOne({ userId, _id: docId })
         if (!fileRecord) throw new BadRequestException('删除失败，找不到该文档')
         //拼接路径

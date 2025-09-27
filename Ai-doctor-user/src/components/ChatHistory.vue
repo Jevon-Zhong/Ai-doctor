@@ -10,18 +10,21 @@
         </div>
         <!-- 个人信息 -->
         <div class="user-profile">
-            <div class="avatar-username">
-                <img src="../assets/logo.png" alt="">
-                <span>手机号</span>
+            <div class="avatar-username" v-if="userStore.getUserInfo.token">
+                <img :src="userStore.getUserInfo.avatar" alt="">
+                <span>{{ userStore.getUserInfo.phoneNumber }}</span>
             </div>
-            <!-- <el-button type="primary">登陆</el-button> -->
-            <el-button type="primary">知识库管理</el-button>
+            <el-button v-else type="primary" @click="appStore.setShowLoginPopup(true)">登陆</el-button>
+            <el-button v-if="userStore.getUserInfo.token" type="primary" @click="appStore.setKnowledgePopup(true)">知识库管理</el-button>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-
+import { useAppStore } from "@/store/app";
+import { useUserStore } from "@/store/user";
+const appStore = useAppStore()
+const userStore = useUserStore()
 </script>
 
 <style scoped lang="less">

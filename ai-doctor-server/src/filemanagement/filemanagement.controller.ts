@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Post, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Filemanagement } from './filemanegement.schema';
@@ -57,6 +57,8 @@ export class FilemanagementController {
         const documentIds: Types.ObjectId[] = []
         //处理上传到文档(for遍历处理多文件，推荐使用队列处理)
         for (const file of files.file) {
+            //将字符使用latin1转回buffer，再重新哟高utf-8的方式编码 
+            file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8')
             //1.读取文档
             const { rawText, splitDocument } = await this.filemanagementService.readFile(file, 'UB')
             //2.上传数据库
@@ -72,13 +74,13 @@ export class FilemanagementController {
     }
 
     //删除知识库指定文件
-    @Delete('deletefilekb')
+    @Delete('deletefilekb/:docId')
     @UseGuards(AuthGuard)
     async deleteFileKb(
         @Req() req: { user: { token: string } },
-        @Body() body: DeletefileDto
+        @Param() param: any
     ) {
-        const { docId } = body
+        const { docId } = param
         const userId = req.user.token
         return await this.filemanagementService.deleteFileKb(userId, docId)
     }
@@ -115,30 +117,46 @@ export class FilemanagementController {
         @Req() req: { user: { token: string } },
         @UploadedFiles() files: { file: Express.Multer.File[] }) {
         const userId = req.user.token
-        const documentIds: Types.ObjectId[] = []
+        // const documentIds: Types.ObjectId[] = []
+        const uploadfileList: {
+            docId: string,
+            fileName: string,
+            fileType: string,
+            fileSize: string,
+        }[] = []
         //处理上传到文档(for遍历处理多文件，推荐使用队列处理)
         for (const file of files.file) {
+            //将字符使用latin1转回buffer，再重新用utf8的方式编码 
+            file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8')
             //1.读取文档
             const { rawText } = await this.filemanagementService.readFile(file, 'UB')
             //2.上传数据库
             const docID = await this.filemanagementService.uploadFile(file, userId, rawText, 'UB')
-            documentIds.push(docID)
+            // documentIds.push(docID)
+            uploadfileList.push({
+                docId: String(docID),
+                fileName: file.originalname,
+                fileType: file.mimetype === 'application/pdf' ? 'PDF' : 'DOCX',
+                fileSize: `${(file.size / 1024).toFixed(2)}kb`
+            })
         }
         return {
-            result: documentIds
+            result: uploadfileList
         }
     }
 
     //对话框删除文件
-    @Delete('deletefile')
+    @Delete('deletefile/:docId')
     @UseGuards(AuthGuard)
     async deleteFile(
         @Req() req: { user: { token: string } },
-        @Body() body: DeletefileDto
+        // @Body() body: DeletefileDto
+        @Param() param: any
     ) {
-        const { docId } = body
-        const userId = req.user.token
-        return await this.filemanagementService.deleteFile(userId, docId)
+        const { docId } = param
+        console.log(docId)
+        // const userId = req.user.token
+        // return await this.filemanagementService.deleteFile(userId, docId)
     }
 }
 

@@ -1,4 +1,3 @@
-// stores/index.js
 import type { UserInfoResType } from '@/types'
 import { defineStore } from 'pinia'
 

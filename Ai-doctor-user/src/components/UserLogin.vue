@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="showLoginPopup" width="400" :close-on-click-modal="false" :close-on-press-escape="false"
+  <el-dialog @close="appStore.setShowLoginPopup(false)" v-model="appStore.getShowLoginPopup" width="400" :close-on-click-modal="false" :close-on-press-escape="false"
     align-center>
     <el-tabs v-model="activeName" class="login-tabs">
       <el-tab-pane label="登陆" name="login">
@@ -21,9 +21,10 @@
 import { ref } from "vue";
 import { validators } from "@/utils/validators";
 import { userRegisterApi, userLoginApi } from '@/api/request'
-import { useUserStore } from "@/store";
+import { useUserStore } from "@/store/user";
+import { useAppStore } from "@/store/app";
 const userStore = useUserStore()
-const showLoginPopup = ref(true);
+const appStore = useAppStore()
 const activeName = ref("login");
 const phoneNumber = ref("");
 const password = ref("");
@@ -52,6 +53,7 @@ const userLogin = async () => {
     phoneNumber: phoneNumber.value,
     password: password.value,
   })
+  console.log(res)
   //存入pinia
   userStore.setUserInfo(res.data)
 };

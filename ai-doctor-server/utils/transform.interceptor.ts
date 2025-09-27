@@ -31,8 +31,8 @@ import {
           let realData = data || [];
           let code = 200;
   
-          if (typeof data === 'object' && data?.message) {
-            message = data.message;
+          if (typeof data === 'object') {
+            message = data.message ?? 'SUCCESS';
             realData = data.result ?? [];
             if (data?.code) {
               code = data.code;

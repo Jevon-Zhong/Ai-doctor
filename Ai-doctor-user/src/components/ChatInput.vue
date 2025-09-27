@@ -1,27 +1,28 @@
 <template>
     <div class="chat-input">
         <div class="chat-input-flex">
-            <el-button @click="queryKb">
+            <el-button @click="queryKb" v-if="uploadfileList.length <= 0">
                 <img src="../assets/zhishiku.png" alt="">
                 <span>知识库问答</span>
             </el-button>
-            <div class="upload-file-list">
-                <div class="upload-file-item">
-                    <img src="../assets/docx-icon.png" alt="">
+            <div class="upload-file-list" v-if="uploadfileList.length > 0">
+                <div class="upload-file-item" v-for="(item, index) in uploadfileList" :key="index">
+                    <img :src="item.fileType === 'PDF' ? pdfIcon : docxIcon" alt="">
                     <div class="box">
-                        <span class="title hidden-text">文档标题文档标题文档标题文档标题</span>
-                        <span class="size">32kb</span>
+                        <span class="title hidden-text">{{ item.fileName }}</span>
+                        <span class="size">{{ item.fileSize }}</span>
                     </div>
-                    <el-icon :size="11" class="delete-file">
+                    <el-icon :size="11" class="delete-file" @click="deleteFile(item.docId)">
                         <CloseBold />
                     </el-icon>
                 </div>
             </div>
             <div class="chat-input-content">
-                <input type="file" multiple :accept="uploadFileType" style="display: none;">
+                <input @change="handleFileChange" ref="fileInputRef" type="file" multiple :accept="uploadFileType"
+                    style="display: none;">
                 <el-tooltip placement="top" effect="customized" content="每次最多上传3个文件(每个5MB),仅支持PDF,DOCX文件类型">
                     <div class="upload-icon-box">
-                        <img src="../assets/upload-icon.png" alt="">
+                        <img src="../assets/upload-icon.png" alt="" @click="triggerFileInput">
                     </div>
                 </el-tooltip>
                 <el-input @keydown="handleKeyDown" resize="none" :autosize="{ minRows: 1, maxRows: 4 }"
@@ -37,6 +38,12 @@
 <script setup lang="ts">
 import { CloseBold } from "@element-plus/icons-vue";
 import { ref, reactive } from 'vue'
+import { uploadDialogApi, deletefileApi } from '@/api/request'
+import type { kbFileListType } from "@/types";
+import { useUserStore } from "@/store/user";
+import docxIcon from '@/assets/docx-icon.png'
+import pdfIcon from '@/assets/pdf-icon.png'
+const userStore = useUserStore()
 const uploadFileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf'
 // 用户输入内容
 let userMessage = ref('')
@@ -68,6 +75,72 @@ const queryKb = () => {
         queryKbStyle.backgroundColor = '#fff'
         queryKbStyle.border = '#eceff3'
         queryKbStyle.color = '#d783af'
+    }
+}
+
+//临时存储上传的文件
+const uploadfileList = ref<kbFileListType>([])
+//调用input上传
+const fileInputRef = ref<HTMLInputElement>()
+const triggerFileInput = () => {
+    fileInputRef.value?.click()
+}
+
+//监听文件上传
+const handleFileChange = async (e: Event) => {
+    const input = e.target as HTMLInputElement
+    const files = input.files as FileList
+    if (files.length <= 0) return;
+    //如果没有登陆，禁止上传
+    if (!userStore.getUserInfo.token) {
+        ElMessage('请先登陆！')
+    }
+    //每次最多选择三个文件
+    if (files.length > 3) {
+        ElMessage('每次最多选择三个文件')
+        return
+    }
+    //对话框上传文件，最多上传三个
+    if (uploadfileList.value.length >= 3) {
+        ElMessage('最多只能上传三个文件！')
+        return
+    }
+    const loading = ElLoading.service({
+        lock: true,
+        text: '文件上传中...',
+        background: 'rgba(0, 0, 0, 0.8)',
+    })
+    //过滤掉文件不是pdf和docx的，并且大于5mb的
+    const allowedTypes = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/pdf']
+    const formData = new FormData
+    const maxSize = 5 * 1024 * 1024
+    for (const file of files) {
+        if (allowedTypes.includes(file.type) && file.size <= maxSize) {
+            formData.append('file', file)
+        }
+    }
+    try {
+        const res = await uploadDialogApi(formData)
+        uploadfileList.value = res.data
+        loading.close()
+    } catch (error) {
+        loading.close()
+        ElMessage('上传出错')
+    }
+}
+
+const deleteFile = async (docId: string) => {
+    const loading = ElLoading.service({
+        lock: true,
+        text: '删除中...',
+        background: 'rgba(0, 0, 0, 0.8)',
+    })
+    try {
+        await deletefileApi(docId)
+        uploadfileList.value = uploadfileList.value.filter(item => (item.docId !== docId))
+        loading.close()
+    } catch (error) {
+        loading.close()
     }
 }
 </script>
@@ -141,6 +214,8 @@ const queryKb = () => {
                 }
 
                 .box {
+                    margin-left: 10px;
+
                     .title {
                         font-size: 14px;
                     }
