@@ -4,15 +4,15 @@ import { UserinfoModule } from './userinfo/userinfo.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
-import { FilemanagementController } from './filemanagement/filemanagement.controller';
-import { FilemanagementService } from './filemanagement/filemanagement.service';
 import { FilemanagementModule } from './filemanagement/filemanagement.module';
-
+import { ChatModule } from './chat/chat.module';
+import { RedisModule } from '@nestjs-modules/ioredis';
 @Module({
   //引入模块
   imports: [
     UserinfoModule,
     FilemanagementModule,
+    ChatModule,
     //加载环境变量
     ConfigModule.forRoot({
       isGlobal: true,
@@ -36,7 +36,17 @@ import { FilemanagementModule } from './filemanagement/filemanagement.module';
         signOptions: { expiresIn: '10d' },
       })
     }),
-    FilemanagementModule
+    //连接redis数据库
+    RedisModule.forRootAsync({
+      inject: [ConfigService],//注入依赖
+      useFactory: (config: ConfigService) => ({
+        type: 'single',
+        options: {
+          host:config.get('REDIS_HOST'),
+          port:config.get('REDIS_PORT')
+        }
+      }),
+    }),
   ],
 })
 export class AppModule { }

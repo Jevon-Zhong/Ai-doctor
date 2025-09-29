@@ -12,7 +12,8 @@ import { Filemanagement, FilemanagementSchema } from './filemanegement.schema';
         ])
     ],
     controllers: [FilemanagementController],
-    providers: [FilemanagementService]
+    providers: [FilemanagementService],
+    exports: [MongooseModule, FilemanagementService]
 })
 export class FilemanagementModule {
 

@@ -22,6 +22,7 @@
   "dependencies": {
     "@langchain/community": "^0.3.56",
     "@langchain/core": "^0.3.76",
+    "@nestjs-modules/ioredis": "^2.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -31,9 +32,11 @@
     "@zilliz/milvus2-sdk-node": "^2.6.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "dayjs": "^1.11.18",
+    "ioredis": "^5.8.0",
     "mammoth": "^1.10.0",
     "mongoose": "^8.18.1",
-    "openai": "^5.21.0",
+    "openai": "^4.104.0",
     "pdf-parse": "^1.1.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
