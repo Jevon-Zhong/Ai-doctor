@@ -57,8 +57,8 @@ class ChatMessage {
     }[]
 
     //阅读的文档或者阅读知识库
-    @Prop({ type: ReadFileData, required: true })
-    readFileData: ReadFileData
+    @Prop({ type: ReadFileData })
+    readFileData?: ReadFileData
 
 }
 
@@ -80,7 +80,7 @@ export class ChatData {
     createTime: number
 
     //对话列表
-    @Prop({ type: [ChatMessageSchema], default: () => dayjs().valueOf() })
+    @Prop({ type: [ChatMessageSchema], default: [] })
     chatList: ChatMessage[]
 }
 export const ChatDataSchema = SchemaFactory.createForClass(ChatData)

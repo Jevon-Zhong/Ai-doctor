@@ -10,10 +10,11 @@ import { Collection, Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Filemanagement } from './filemanegement.schema';
 import { ConfigService } from '@nestjs/config';
-import { MilvusClient, DataType } from "@zilliz/milvus2-sdk-node";
+import { MilvusClient, DataType, WeightedRanker, SearchResultData } from "@zilliz/milvus2-sdk-node";
 import OpenAI from 'openai';
 import path from 'path';
 import fs from 'fs'
+import { kwExtractionPrompt } from 'src/chat/roleDefinition';
 @Injectable()
 export class FilemanagementService {
     private client: MilvusClient
@@ -246,7 +247,7 @@ export class FilemanagementService {
     //删除mongodb，本地
     async deleteFile(userId: string, docId: string) {
         //查找文件路径
-        console.log('path',userId, docId)
+        console.log('path', userId, docId)
         const fileRecord = await this.filemanagementModel.findOne({ userId, _id: docId })
         if (!fileRecord) throw new BadRequestException('删除失败，找不到该文档')
         //拼接路径
@@ -258,5 +259,101 @@ export class FilemanagementService {
             _id: docId,
             userId
         })
+    }
+
+    //查询向量数据库
+    async searchDatabase(userId: string, userQuestion: string, questionVector: number[]) {
+        //集合名称
+        const collectionName = `_${userId}`
+        //加载集合
+        await this.client.loadCollection({ collection_name: collectionName })
+        //混合搜索
+        const search_param_1 = {
+            "data": questionVector,
+            "anns_field": "embedDocTitle",
+            "param": {
+                "metric_type": "COSINE"
+            },
+            "limit": 9
+        }
+        const search_param_2 = {
+            "data": questionVector,
+            "anns_field": "embedDocText",
+            "param": {
+                "metric_type": "COSINE"
+            },
+            "limit": 9
+        }
+        const res = await this.client.search({
+            collection_name: collectionName,
+            data: [search_param_1, search_param_2],
+            limit: 18,
+            output_fields: ['docTitle', 'docText'],
+            rerank: WeightedRanker([0.3, 0.8])
+        });
+        //搜索向量数据库结果
+        const searchReultArr = res.results
+        
+        //释放集合
+        this.client.releaseCollection({ collection_name: collectionName })
+        //提取关键词
+        const keywordres = await this.extractKeywords(userQuestion)
+        //提取到的关键词
+        const keyWordObject = JSON.parse(keywordres.choices[0].message.content as string)
+        //关键词数组
+        const keyWordList = keyWordObject.keyWord
+        if (searchReultArr.length > 0) {
+            //过滤后的文档片段
+            const filterDocList = this.filterDocsByKeywords(searchReultArr, keyWordList)
+
+            //匹配得到的标题
+            let searchDocTitle: string[]
+            //匹配得到的内容
+            let searchDocText = ''
+            if (filterDocList.length > 0) {
+                //去重
+                searchDocTitle = [...new Set(filterDocList.map(item => item.docTitle))]
+                filterDocList.forEach((item, index) => searchDocText += index + 1 + '.' + item.docText)
+            } else {
+                searchDocTitle = []
+                searchDocText = '&没有检索到相关文档&'
+            }
+            return {
+                searchDocTitle,
+                searchDocText: `请根据检索到的知识库文档内容回复用户问题，用户问题：${userQuestion};\n文档内容：${searchDocText}`
+            }
+        } else {
+            return {
+                searchDocTitle:[],
+                searchDocText: `请根据检索到的知识库文档内容回复用户问题，用户问题：${userQuestion};\n文档内容：&没有检索到相关文档&`
+            }
+        }
+    }
+
+    //让模型提取关键词
+    async extractKeywords(content: string) {
+        const res = await this.openai.chat.completions.create({
+            model: "qwen-plus",  //此处以qwen-plus为例，可按需更换模型名称。模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
+            messages: [
+                { role: "system", content: kwExtractionPrompt },
+                { role: "user", content }
+            ],
+            stream: false,
+            response_format: { "type": "json_object" }
+        })
+        return res
+    }
+
+    //用关键词取匹配检索到的文档
+    filterDocsByKeywords(docList: SearchResultData[], keyWord: string[]) {
+        const result: SearchResultData[] = []
+        for (const doc of docList) {
+            const combinedText = `${doc.docTitle}${doc.docText}`
+            const hasKeyword = keyWord.some(item => combinedText.includes(item))
+            if (hasKeyword) {
+                result.push(doc)
+            }
+        }
+        return result
     }
 }
