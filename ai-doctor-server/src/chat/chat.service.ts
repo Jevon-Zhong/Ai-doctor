@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Get, Injectable, Query, Req, UseGuards } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import { MessagesType, UploadFileListType } from './chat';
 import { Response } from 'express';
@@ -13,6 +13,9 @@ import { medAssistantDataPrompt } from './roleDefinition';
 import { toolsData } from './tools';
 import { FilemanagementService } from 'src/filemanagement/filemanagement.service';
 import { MyLogger } from 'utils/no-timestamp-logger';
+import { create } from 'domain';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { SingleChatDataDto } from './chat.dto';
 //创建请求对话的终止控制器
 const controllerMap = new Map<string, AbortController>()
 @Injectable()
@@ -246,18 +249,18 @@ export class ChatService {
                 //同步更新redis
                 const redisKey = `chat_history:${userId}:${newChat._id}`
                 await this.redis.set(redisKey, JSON.stringify(conversationPair), 'EX', 10800)
-                
+
                 //返回对话id给前端
                 this.notifyStream(stream, {
-                    role:'sessionId',
+                    role: 'sessionId',
                     content: newChat._id,
                     modelPromt: '新会话id已创建，请保存会话id'
                 })
             } else {
                 //不是新对话，是在历史对话上接着询问的
                 await this.chatDataModel.updateOne(
-                    {userId, _id: sessionId},
-                    {$push: {chatList: {$each: conversationPair}}}
+                    { userId, _id: sessionId },
+                    { $push: { chatList: { $each: conversationPair } } }
                 )
                 //同步更新redis
                 const redisKey = `chat_history:${userId}:${sessionId}`
@@ -354,6 +357,80 @@ export class ChatService {
         return {
             assistantMessage,
             readFileList
+        }
+    }
+
+    //获取对话列表
+    async getChatList(userId: string) {
+        const res = await this.chatDataModel.aggregate([
+            { $match: { userId } },
+            {
+                $project: {
+                    sessionId: '$_id',
+                    _id: 0,
+                    createTime: 1,
+                    chatList: {
+                        $map: {
+                            input: { $slice: ['$chatList', 1] },
+                            as: 'item',
+                            in: {
+                                content: {
+                                    $ifNull: ['$$item.displayContent', '$$item.content']
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            { $sort: { createTime: -1 } },
+            { $unwind: '$chatList' },
+            {
+                $project: {
+                    sessionId: 1,
+                    content: '$chatList.content'
+                }
+            }
+        ])
+        return {
+            result: res
+        }
+    }
+
+    //获取某个会话的对话数据
+    async singleChatData(
+        userId: string,
+        sessionId: string
+    ) {
+        //存储要返回的对话数据
+        let singleChatData: MessagesType[] = []
+        //先查询redis是否有
+        const redisKey = `chat_history:${userId}:${sessionId}`
+        const cacheData = await this.redis.get(redisKey)
+        if (cacheData) {
+            singleChatData = JSON.parse(cacheData)
+        } else {
+            //从mongodb请求
+            const chatData = await this.chatDataModel.find({ userId, _id: sessionId })
+            singleChatData = chatData[0].chatList
+            await this.redis.set(redisKey, JSON.stringify(singleChatData), 'EX', 10800)
+        }
+        return {
+            result: singleChatData
+        }
+    }
+
+    //终止模型的输出
+    async stopOutput(sessionId: string) {
+        const controller = controllerMap.get(sessionId)
+        if (controller) {
+            controller.abort()//停止生成
+            return {
+                message: '会话已终止'
+            }
+        } else {
+            return {
+                message: '会话未找到， 停止失败'
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
-import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/auth.guard';
-import { SendMessageQueryDto } from './chat.dto';
+import { SendMessageQueryDto, SingleChatDataDto } from './chat.dto';
 import { ChatService } from './chat.service';
 import { Types } from 'mongoose';
 import type { Response } from 'express';
@@ -28,4 +28,38 @@ export class ChatController {
             isKnowledgeBased
         )
     }
+
+    //获取对话列表
+    @Get('getchatlist')
+    @UseGuards(AuthGuard)
+    async getChatList(
+        @Req() req: { user: { token: string } }
+    ) {
+        return await this.chatService.getChatList(req.user.token)
+    }
+
+    //获取某个会话的对话数据
+    @Get('singlechatdata')
+    @UseGuards(AuthGuard)
+    async singleChatData(
+        @Req() req: { user: { token: string } },
+        @Query() query: SingleChatDataDto
+    ) {
+        const { sessionId } = query
+        return await this.chatService.singleChatData(req.user.token, sessionId)
+    }
+
+    //终止模型的输出
+    @Post('stopoutput')
+    @UseGuards(AuthGuard)
+    async stopOutput(
+        @Req() req: { user: { token: string } },
+        @Body() Body: SingleChatDataDto
+    ) {
+        const { sessionId } = Body
+        return await this.chatService.stopOutput(sessionId)
+    }
+
+
+
 }

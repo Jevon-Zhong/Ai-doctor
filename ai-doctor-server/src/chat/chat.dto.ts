@@ -50,3 +50,10 @@ export class SendMessageQueryDto {
     @IsBoolean({message: 'isKnowledgeBased必须是布尔值'})
     isKnowledgeBased?: boolean
 }
+
+//获取某个会话的对话数据传递的会话id
+export class SingleChatDataDto {
+    @IsString({message: 'sessionId必须是字符串'})
+    @IsNotEmpty({message: '对话id不能为空'})
+    sessionId: string
+}
