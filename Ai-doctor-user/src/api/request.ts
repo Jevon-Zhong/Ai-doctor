@@ -1,8 +1,10 @@
 const baseUrl = 'http://127.0.0.1:3000'
 import axios from "axios"
-import type { UserRegisterType, ApiResponseType, ApiResponseErrorType, UserLoginType, UserInfoResType, kbFileListType } from '@/types/index'
+import type { UserRegisterType, ApiResponseType, ApiResponseErrorType, UserLoginType, UserInfoResType, kbFileListType, SendMessageType, AiMessageType } from '@/types/index'
 import { useUserStore } from "@/store/user"
+import { useChatStore } from "@/store/chat"
 const userStore = useUserStore()
+const chatStore = useChatStore()
 //创建一个实例
 const axiosInstance = axios.create({
     baseURL: baseUrl
@@ -78,4 +80,71 @@ export const getKbFileListApi = (): Promise<ApiResponseType<kbFileListType>> => 
 //知识库删除文件
 export const deletefilekbApi = (docId: string): Promise<ApiResponseType<[]>> => {
     return axiosInstance.delete(`/filemanagement/deletefilekb/${docId}`)
+}
+
+//用户请求和模型对话，模型流式输出
+export const SendMessageApi = async (params: SendMessageType) => {
+    const response = await fetch(`${baseUrl}/chat/sendmessage`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userStore.getUserInfo.token}`
+        },
+        body: JSON.stringify(params)
+    })
+
+    //pinia存储的对话数据中的最后一项，即ai最新回复的数据
+    const aiMessageObj = chatStore.getMessageList[chatStore.getMessageList.length - 1]
+    if (!response.ok) {
+        const errorText = await response.text()
+        chatStore.disabledStatus = false
+        ElMessage('发送失败，请重试！')
+        throw new Error(`发送失败：${errorText}`)
+    }
+
+    // 确保响应是可读流
+    if (!response.body) {
+        throw new Error('Response body is not available')
+    }
+
+    const reader = response.body.getReader()
+    const textDecoder = new TextDecoder()
+    let result = true
+    while (result) {
+        const { done, value } = await reader.read()
+
+        if (done) {
+            console.log('Stream ended')
+            console.log(aiMessageObj)
+            chatStore.disabledStatus = false
+            result = false
+            break
+        }
+        const chunkText = textDecoder.decode(value)
+        let parts = chunkText.split('###ABC###')
+        for (const part of parts) {
+            if (part.trim() === '') continue;
+            const aiMessage: AiMessageType = JSON.parse(part)
+            console.log(aiMessage)
+            //取会话id
+            if (aiMessage.role === 'sessionId') {
+                chatStore.setSessionId(aiMessage.content)
+            }
+
+            //取文档或知识库的提示
+            if (aiMessage.type) {
+                aiMessageObj.readFileData = aiMessage
+            }
+
+            //取模型回复的数据
+            if (aiMessage.role === 'assistant') {
+                aiMessageObj.loadingCircle = false
+                if (aiMessage.content && aiMessage.content.trim()) {
+                    aiMessageObj.content += aiMessage.content
+                }
+            }
+        }
+        // output += chunkText
+    }
+    // console.log('output:', output)
 }

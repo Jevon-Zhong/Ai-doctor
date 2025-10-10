@@ -34,7 +34,7 @@ export class SendMessageQueryDto {
     //携带的文件列表
     @IsOptional()
     @IsArray({ message: 'uploadFileList必须是数组' })
-    @ArrayNotEmpty({ message: '上传的文件不能为空' })
+    // @ArrayNotEmpty({ message: '上传的文件不能为空' })
     @ValidateNested({ each: true })//对数组里的每一项进行校验
     @Type(() => UploadFileDto)//把数组里的一些转换为UploadFileDtio的实例，否则会导致嵌套字段无效
     uploadFileList?: UploadFileDto[]

@@ -27,8 +27,11 @@
                 </el-tooltip>
                 <el-input @keydown="handleKeyDown" resize="none" :autosize="{ minRows: 1, maxRows: 4 }"
                     v-model="userMessage" type="textarea" placeholder="任何健康问题都可以问我，Shift + Enter换行" />
-                <el-button>
+                <el-button @click="sendMessage" v-show="!chatStore.getDisabledStatus">
                     <img src="../assets/send-icon.png" alt="">
+                </el-button>
+                <el-button v-show="chatStore.getDisabledStatus">
+                    <img src="../assets/stop-icon.png" alt="">
                 </el-button>
             </div>
         </div>
@@ -38,12 +41,15 @@
 <script setup lang="ts">
 import { CloseBold } from "@element-plus/icons-vue";
 import { ref, reactive } from 'vue'
-import { uploadDialogApi, deletefileApi } from '@/api/request'
+import { uploadDialogApi, deletefileApi, SendMessageApi } from '@/api/request'
 import type { kbFileListType } from "@/types";
 import { useUserStore } from "@/store/user";
+import { useChatStore } from "@/store/chat";
+import { validators } from '@/utils/validators'
 import docxIcon from '@/assets/docx-icon.png'
 import pdfIcon from '@/assets/pdf-icon.png'
 const userStore = useUserStore()
+const chatStore = useChatStore()
 const uploadFileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf'
 // 用户输入内容
 let userMessage = ref('')
@@ -52,6 +58,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
     //阻止回车
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault()
+        sendMessage()
     }
 }
 
@@ -143,11 +150,38 @@ const deleteFile = async (docId: string) => {
         loading.close()
     }
 }
+
+const sendMessage = () => {
+    //校验
+    validators.isNotEmpty(userMessage.value, '请输入内容')
+    chatStore.addMessageList({
+        role: 'user',
+        content: userMessage.value.trim(),
+        ...(uploadfileList.value.length > 0 && { uploadFileList: uploadfileList.value }),
+        ...(uploadfileList.value.length > 0 && { displayContent: userMessage.value.trim() })
+    })
+    chatStore.addMessageList({
+        role: 'assistant',
+        content: '',
+        loadingCircle: true
+    })
+    chatStore.setDisabledStatus(true)
+    SendMessageApi({
+        content: userMessage.value.trim(),
+        sessionId: chatStore.getSessionId,
+        uploadFileList: uploadfileList.value,
+        isKnowledgeBased: isKnowledgeBased.value
+    })
+
+    //清空输入框和临时文件
+    userMessage.value = ''
+    uploadfileList.value.length = 0
+}
 </script>
 
 <style scoped lang="less">
 .chat-input {
-    // background-color: red;
+    background-color: #f6f7fb;
     position: fixed;
     left: 230px;
     bottom: 0;

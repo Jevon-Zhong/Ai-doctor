@@ -135,6 +135,7 @@ export class ChatService {
             } else {
                 //redis没有数据， 那就从mongodb取数据
                 const chatData = await this.chatDataModel.find({ userId, _id: sessionId })
+                console.log('ddd', chatData[0])
                 historyConversationList = chatData[0].chatList
                 //存储进redis, 3小时过期
                 await this.redis.set(redisKey, JSON.stringify(historyConversationList), 'EX', 10800)

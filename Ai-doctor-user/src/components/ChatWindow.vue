@@ -1,46 +1,54 @@
 <template>
     <div class="chat-window">
-        <div class="chat-message">
+        <div class="chat-message" v-for="(item, index) in chatStore.getMessageList" :key="index">
             <!-- 用户消息 -->
-            <div class="user-message">
-                <p>hellohellohellohellohellohellohellohello</p>
+            <div class="user-message" v-if="item.role === 'user'">
+                <p>{{ item.displayContent || item.content }}</p>
             </div>
             <!-- 展示文件 -->
             <div class="file-view">
-                <div class="file-item">
+                <div class="file-item" v-for="(fileItem, fileIndex) in item.uploadFileList" :key="fileIndex">
                     <div class="file-icon">
-                        <img src="../assets/docx-icon.png" alt="">
+                        <img :src="fileItem.fileType === 'PDF' ? pdfIcon : docxIcon" alt="">
                     </div>
                     <div class="file-name">
-                        <span class="title hidden-text">文档标题文档标题文档标题文档标题文档标题文档标题文档标题文档标题</span>
-                        <span class="size">32kb</span>
+                        <span class="title hidden-text">{{ fileItem.fileName }}</span>
+                        <span class="size">{{ fileItem.fileSize }}</span>
                     </div>
                 </div>
             </div>
             <!-- 模型消息 -->
-            <div class="ai-message">
-                <el-collapse>
-                    <el-collapse-item title="为你检索到......">
-                        <div>
-                            Consistent with real life: in line with the process and logic of real
-                            life, and comply with languages and habits that the users are used to;
+            <div class="ai-message" v-if="item.role === 'assistant'">
+                <el-collapse v-if="item.readFileData">
+                    <el-collapse-item :title="item.readFileData.promptInfo">
+                        <div v-for="(listItem, listIndex) in item.readFileData.fileList" :key="listIndex">
+                            {{ `${listIndex + 1}.${listItem}` }}
                         </div>
                     </el-collapse-item>
                 </el-collapse>
-                <div>模型回复纯文本</div>
+                <div v-html="marked(item.content)" />
+                <!-- 动画效果 -->
+                <div class="loading-circle" v-if="item.loadingCircle"></div>
             </div>
         </div>
+        <div style="height: 250px;"></div>
     </div>
 </template>
 
 <script setup lang="ts">
-// import { ref } from "vue"
+import { useChatStore } from '@/store/chat';
+import docxIcon from '@/assets/docx-icon.png'
+import pdfIcon from '@/assets/pdf-icon.png'
+import { marked } from 'marked';
+const chatStore = useChatStore()
+
 </script>
 
 <style scoped lang="less">
 .chat-window {
     margin-left: 230px;
     width: 100%;
+    height: 100vh;
 }
 
 .chat-message {
@@ -127,6 +135,30 @@
 
         .el-collapse {
             margin-bottom: 10px;
+        }
+
+        .loading-circle {
+            width: 12px;
+            height: 12px;
+            background-color: #3a71e8;
+            border-radius: 50%;
+            margin: 5px 0;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.5);
+                opacity: 0.7;
+            }
         }
     }
 }

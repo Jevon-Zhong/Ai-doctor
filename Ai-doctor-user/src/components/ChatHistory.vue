@@ -1,9 +1,9 @@
 <template>
     <div class="chat-history-view">
         <div class="new-dialog">
-            <el-button type="primary">新建对话</el-button>
+            <el-button type="primary" :disabled="chatStore.getDisabledStatus">新建对话</el-button>
         </div>
-        <div class="dialog-list">
+        <div class="dialog-list" @click="handleSessionClick">
             <div class="dialog-list-item hidden-text">
                 hellohellohellohellohellohello
             </div>
@@ -23,15 +23,21 @@
 <script setup lang="ts">
 import { useAppStore } from "@/store/app";
 import { useUserStore } from "@/store/user";
+import { useChatStore } from "@/store/chat";
 const appStore = useAppStore()
 const userStore = useUserStore()
+const chatStore = useChatStore()
+
+const handleSessionClick = () => {
+    if (chatStore.disabledStatus) return
+}
 </script>
 
 <style scoped lang="less">
 .chat-history-view {
     background-color: #fff;
     width: 230px;
-    position: absolute;
+    position: fixed;
     left: 0;
     top: 0;
     bottom: 0;
