@@ -7,7 +7,8 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer'
 import { extname } from 'path';
 import { FilemanagementService } from './filemanagement.service';
-import { DeletefileDto } from './filemanagement.dto';
+import { DeletefileDto, DeleteImageDto } from './filemanagement.dto';
+import { ConfigService } from '@nestjs/config';
 //处理上传的文件
 const uploadFileInterceptor = FileFieldsInterceptor([{ name: 'file', maxCount: 3 }], {
     storage: diskStorage({
@@ -36,14 +37,45 @@ const uploadFileInterceptor = FileFieldsInterceptor([{ name: 'file', maxCount: 3
     }
 })
 
+//处理上传的图片
+const uploadImageInterceptor = FileFieldsInterceptor([{ name: 'file', maxCount: 1 }], {
+    storage: diskStorage({
+        destination: './uploadImgs',//文件存储的目录
+        filename: (req, file, callback) => {
+            //对文件重新命名
+            const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`
+            callback(null, uniqueName)
+        },
+    }),
+    //文件过滤
+    fileFilter: (req, file, callback) => {
+        //允许上传文件类型
+        const allowedType = [
+            'image/jpeg',
+            'image/png',
+            'image/webp'
+        ]
+        if (!allowedType.includes(file.mimetype)) {
+            return callback(new BadRequestException('只支持上传jpg、jpeg、png、webp格式的文件'), false)
+        }
+        callback(null, true)
+    },
+    //文件限制大小
+    limits: {
+        fileSize: 10 * 1024 * 1024
+    }
+})
+
 
 @Controller('filemanagement')
 export class FilemanagementController {
     constructor(
         @InjectModel(Filemanagement.name)
         private readonly FilemanagementModel: Model<Filemanagement>,
-        private readonly filemanagementService: FilemanagementService
+        private readonly filemanagementService: FilemanagementService,
+        private configService: ConfigService
     ) { }
+
     //上传文件（知识库）
     @Post('uploadkb')
     @UseGuards(AuthGuard)
@@ -70,6 +102,24 @@ export class FilemanagementController {
         }
         return {
             result: documentIds
+        }
+    }
+
+    //上传图片
+    @Post('uploadimage')
+    @UseGuards(AuthGuard)
+    @UseInterceptors(uploadImageInterceptor)
+    async uploadImage(
+        @UploadedFiles() files: { file: Express.Multer.File[] }) {
+        //拼接图片地址，返回前端给用户看得到
+        const baseUrl = this.configService.get('IP_ADDR')
+        const imageUrl = `${baseUrl}/uploadImgs/${files.file[0].filename}`
+        return {
+            result: {
+                imagePath: files.file[0].path,
+                mimeType: files.file[0].mimetype,
+                imageUrl
+            }
         }
     }
 
@@ -157,6 +207,17 @@ export class FilemanagementController {
         console.log(docId)
         // const userId = req.user.token
         // return await this.filemanagementService.deleteFile(userId, docId)
+    }
+
+    //删除图片
+    @Delete('deleteimage/:imagePath')
+    @UseGuards(AuthGuard)
+    async deleteImage(
+        @Param() param: DeleteImageDto
+    ) {
+        const { imagePath } = param
+        console.log(imagePath)
+        return this.filemanagementService.deleteImage(imagePath)
     }
 }
 

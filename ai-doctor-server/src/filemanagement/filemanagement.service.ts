@@ -293,7 +293,7 @@ export class FilemanagementService {
         });
         //搜索向量数据库结果
         const searchReultArr = res.results
-        
+
         //释放集合
         this.client.releaseCollection({ collection_name: collectionName })
         //提取关键词
@@ -324,7 +324,7 @@ export class FilemanagementService {
             }
         } else {
             return {
-                searchDocTitle:[],
+                searchDocTitle: [],
                 searchDocText: `请根据检索到的知识库文档内容回复用户问题，用户问题：${userQuestion};\n文档内容：&没有检索到相关文档&`
             }
         }
@@ -355,5 +355,20 @@ export class FilemanagementService {
             }
         }
         return result
+    }
+
+    //删除图片
+    deleteImage(imagePath: string) {
+        //拼接路径
+        const filePath = path.join(process.cwd(), `uploadImgs/${imagePath}`)
+        try {
+            //删除服务器上的文件
+            fs.unlinkSync(filePath)
+        } catch (error) {
+            return {
+                message: '删除失败'
+            }
+        }
+
     }
 }

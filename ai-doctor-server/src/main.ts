@@ -7,10 +7,16 @@ import { ValidationPipe } from '@nestjs/common'
 import { AllExceptionFilter } from '../utils/all-exception.filter'
 import { TransformInterceptor } from '../utils/transform.interceptor'
 import { MyLogger } from '../utils/no-timestamp-logger'
+import express from 'express';
+import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: new MyLogger(),
   });
+  //访问静态资源
+  app.use('/uploadImgs', express.static(join(process.cwd(), 'uploadImgs')))
+  //给所有接口后面加上自定义前缀
+  // app.setGlobalPrefix('api')
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,//自动去掉没有定义的字段

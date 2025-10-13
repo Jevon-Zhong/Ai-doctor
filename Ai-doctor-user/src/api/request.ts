@@ -1,10 +1,12 @@
 const baseUrl = 'http://127.0.0.1:3000'
 import axios from "axios"
-import type { UserRegisterType, ApiResponseType, ApiResponseErrorType, UserLoginType, UserInfoResType, kbFileListType, SendMessageType, AiMessageType } from '@/types/index'
+import type { UserRegisterType, ApiResponseType, ApiResponseErrorType, UserLoginType, UserInfoResType, kbFileListType, SendMessageType, AiMessageType, GetchatlistType, MessageListType } from '@/types/index'
 import { useUserStore } from "@/store/user"
 import { useChatStore } from "@/store/chat"
+import { useAppStore } from "@/store/app"
 const userStore = useUserStore()
 const chatStore = useChatStore()
+const appStore = useAppStore()
 //创建一个实例
 const axiosInstance = axios.create({
     baseURL: baseUrl
@@ -32,10 +34,20 @@ axiosInstance.interceptors.response.use(
         const status: number = error.status
         switch (status) {
             case 404:
-                console.error("接口不存在或者请求方式不对")
+                ElMessage.error('接口不存在或者请求方式不对')
                 break;
             case 401:
-                console.error("没有操作权限")
+                appStore.setShowLoginPopup(true)
+                ElMessage.error("没有操作权限")
+                break;
+            case 500:
+                ElMessage.error("服务器发生错误")
+                break;
+            case 501:
+                ElMessage.error("服务器发生错误")
+                break;
+            case 502:
+                ElMessage.error("服务器发生错误")
                 break;
             default:
                 const message = error.response.data.message
@@ -82,8 +94,23 @@ export const deletefilekbApi = (docId: string): Promise<ApiResponseType<[]>> => 
     return axiosInstance.delete(`/filemanagement/deletefilekb/${docId}`)
 }
 
+//获取对话列表数据
+export const getChatListApi = (): Promise<ApiResponseType<GetchatlistType[]>> => {
+    return axiosInstance.get('/chat/getchatlist')
+}
+
+//获取某个对话的详细数据
+export const singlechatdata = (params: {sessionId: string}): Promise<ApiResponseType<MessageListType[]>> => {
+    return axiosInstance.get('/chat/singlechatdata', {params})
+}
+
+//终止模型输出
+export const stopoutputApi = (params: {sessionId: string}): Promise<ApiResponseType<[]>> => {
+    return axiosInstance.post('/chat/stopoutput', params)
+}
+
 //用户请求和模型对话，模型流式输出
-export const SendMessageApi = async (params: SendMessageType) => {
+export const sendMessageApi = async (params: SendMessageType) => {
     const response = await fetch(`${baseUrl}/chat/sendmessage`, {
         method: 'POST',
         headers: {
@@ -144,7 +171,5 @@ export const SendMessageApi = async (params: SendMessageType) => {
                 }
             }
         }
-        // output += chunkText
     }
-    // console.log('output:', output)
 }
