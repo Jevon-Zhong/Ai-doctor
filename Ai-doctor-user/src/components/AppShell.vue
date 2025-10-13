@@ -1,8 +1,8 @@
 <template>
     <div class="chat-layout">
         <ChatHistory />
-        <ChatWindow />
-        <!-- <ChatWelcome /> -->
+        <ChatWelcome v-if="chatStore.getChatWelcome"/>
+        <ChatWindow v-else/>
     </div>
     <ChatInput />
     <Knowledge />
@@ -16,6 +16,8 @@ import ChatWelcome from './ChatWelcome.vue';
 import ChatInput from './ChatInput.vue';
 import Knowledge from './Knowledge.vue';
 import UserLogin from './UserLogin.vue';
+import { useChatStore } from '@/store/chat';
+const chatStore = useChatStore()
 </script>
 
 <style scoped lang="less">

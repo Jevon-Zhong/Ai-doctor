@@ -1,6 +1,6 @@
 <template>
-  <el-dialog @close="appStore.setShowLoginPopup(false)" v-model="appStore.getShowLoginPopup" width="400" :close-on-click-modal="false" :close-on-press-escape="false"
-    align-center>
+  <el-dialog @close="appStore.setShowLoginPopup(false)" v-model="appStore.getShowLoginPopup" width="400"
+    :close-on-click-modal="false" :close-on-press-escape="false" align-center>
     <el-tabs v-model="activeName" class="login-tabs">
       <el-tab-pane label="登陆" name="login">
         <el-input v-model="phoneNumber" placeholder="手机号" />
@@ -20,11 +20,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { validators } from "@/utils/validators";
-import { userRegisterApi, userLoginApi } from '@/api/request'
+import { userRegisterApi, userLoginApi, getChatListApi } from '@/api/request'
 import { useUserStore } from "@/store/user";
 import { useAppStore } from "@/store/app";
+import { useChatStore } from "@/store/chat";
 const userStore = useUserStore()
 const appStore = useAppStore()
+const chatStore = useChatStore()
 const activeName = ref("login");
 const phoneNumber = ref("");
 const password = ref("");
@@ -56,6 +58,11 @@ const userLogin = async () => {
   console.log(res)
   //存入pinia
   userStore.setUserInfo(res.data)
+  //登陆成功立马获取对话列表数据
+  const res1 = await getChatListApi()
+  chatStore.setChatListData(res1.data)
+  appStore.setShowLoginPopup(false)
+  chatStore.setChatWelcome(true)
 };
 </script>
 

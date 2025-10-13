@@ -1,4 +1,4 @@
-import { Get, Injectable, Query, Req, UseGuards } from '@nestjs/common';
+import { Injectable} from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import { MessagesType, UploadFileListType } from './chat';
 import { Response } from 'express';
@@ -13,9 +13,6 @@ import { medAssistantDataPrompt } from './roleDefinition';
 import { toolsData } from './tools';
 import { FilemanagementService } from 'src/filemanagement/filemanagement.service';
 import { MyLogger } from 'utils/no-timestamp-logger';
-import { create } from 'domain';
-import { AuthGuard } from 'src/auth/auth.guard';
-import { SingleChatDataDto } from './chat.dto';
 //创建请求对话的终止控制器
 const controllerMap = new Map<string, AbortController>()
 @Injectable()

@@ -78,3 +78,8 @@ export type AiMessageType = {
     promptInfo: string, //服务器返回的提示
     fileList: string[]//处理的文件列表
 }
+
+export type GetchatlistType = {
+    sessionId: string,
+    content: string
+}

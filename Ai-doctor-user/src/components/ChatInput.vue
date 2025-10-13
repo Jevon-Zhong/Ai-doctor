@@ -30,7 +30,7 @@
                 <el-button @click="sendMessage" v-show="!chatStore.getDisabledStatus">
                     <img src="../assets/send-icon.png" alt="">
                 </el-button>
-                <el-button v-show="chatStore.getDisabledStatus">
+                <el-button @click="stopOutput" v-show="chatStore.getDisabledStatus">
                     <img src="../assets/stop-icon.png" alt="">
                 </el-button>
             </div>
@@ -41,7 +41,7 @@
 <script setup lang="ts">
 import { CloseBold } from "@element-plus/icons-vue";
 import { ref, reactive } from 'vue'
-import { uploadDialogApi, deletefileApi, SendMessageApi } from '@/api/request'
+import { uploadDialogApi, deletefileApi, sendMessageApi, stopoutputApi } from '@/api/request'
 import type { kbFileListType } from "@/types";
 import { useUserStore } from "@/store/user";
 import { useChatStore } from "@/store/chat";
@@ -166,7 +166,12 @@ const sendMessage = () => {
         loadingCircle: true
     })
     chatStore.setDisabledStatus(true)
-    SendMessageApi({
+    chatStore.setChatWelcome(false)
+    //如果是新建对话，需要把问题加入对话列表的第一项
+    if (!chatStore.getSessionId) {
+        chatStore.unshiftChatListData({ sessionId: '', content: userMessage.value.trim() })
+    }
+    sendMessageApi({
         content: userMessage.value.trim(),
         sessionId: chatStore.getSessionId,
         uploadFileList: uploadfileList.value,
@@ -176,6 +181,11 @@ const sendMessage = () => {
     //清空输入框和临时文件
     userMessage.value = ''
     uploadfileList.value.length = 0
+}
+
+//终止模型输出
+const stopOutput = async () => {
+    await stopoutputApi({ sessionId: chatStore.sessionId })
 }
 </script>
 
