@@ -17,7 +17,7 @@ export class ChatController {
         @Body() body: SendMessageQueryDto,
         @Res() stream: Response
     ) {
-        const { content, uploadFileList, sessionId, isKnowledgeBased } = body
+        const { content, uploadFileList, sessionId, isKnowledgeBased, uploadImage } = body
         const userId = new Types.ObjectId(req.user.token)
         await this.chatService.combineConversation(
             userId,
@@ -25,7 +25,8 @@ export class ChatController {
             stream,
             sessionId,
             uploadFileList,
-            isKnowledgeBased
+            isKnowledgeBased,
+            uploadImage
         )
     }
 

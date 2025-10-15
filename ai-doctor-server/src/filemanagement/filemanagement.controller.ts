@@ -51,6 +51,7 @@ const uploadImageInterceptor = FileFieldsInterceptor([{ name: 'file', maxCount: 
     fileFilter: (req, file, callback) => {
         //允许上传文件类型
         const allowedType = [
+            'image/jpg',
             'image/jpeg',
             'image/png',
             'image/webp'
@@ -116,7 +117,7 @@ export class FilemanagementController {
         const imageUrl = `${baseUrl}/uploadImgs/${files.file[0].filename}`
         return {
             result: {
-                imagePath: files.file[0].path,
+                imagePath: files.file[0].path.split('uploadImgs/')[1],
                 mimeType: files.file[0].mimetype,
                 imageUrl
             }

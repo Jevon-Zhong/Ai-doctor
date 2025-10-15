@@ -18,4 +18,10 @@ export interface MessagesType {
         fileList: string[]//处理的文件列表
     },
     displayContent?: string//用户原始问题
+    //携带的图片
+    uploadImage?: {
+        imagePath: string,
+        mimeType: string,
+        imageUrl: string
+    }
 }

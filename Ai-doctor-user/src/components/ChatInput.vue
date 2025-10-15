@@ -1,10 +1,20 @@
 <template>
     <div class="chat-input">
         <div class="chat-input-flex">
-            <el-button @click="queryKb" v-if="uploadfileList.length <= 0">
-                <img src="../assets/zhishiku.png" alt="">
-                <span>知识库问答</span>
-            </el-button>
+            <div style="display: flex;" v-if="!uploadImage && uploadfileList.length <= 0">
+                <el-button class="button1" style="margin-right: 10px;" @click="queryKb" v-if="uploadfileList.length <= 0">
+                    <img src="../assets/zhishiku.png" alt="">
+                    <span>知识库问答</span>
+                </el-button>
+                <input @change="handleImageChange" ref="imageInputRef" type="file" multiple :accept="uploadImageType"
+                    style="display: none;">
+                <el-tooltip placement="top" effect="customized" content="上传一张不超过10M的JPG/JEPG/PNG/WEBP的图片">
+                    <el-button class="button2" @click="triggerImageInput">
+                        <img src="../assets/baogaodan.png" alt="">
+                        <span>上传报告单/药品/CT</span>
+                    </el-button>
+                </el-tooltip>
+            </div>
             <div class="upload-file-list" v-if="uploadfileList.length > 0">
                 <div class="upload-file-item" v-for="(item, index) in uploadfileList" :key="index">
                     <img :src="item.fileType === 'PDF' ? pdfIcon : docxIcon" alt="">
@@ -17,10 +27,18 @@
                     </el-icon>
                 </div>
             </div>
+            <div class="upload-file-list" v-if="uploadImage">
+                <div class="upload-image-item">
+                    <img :src="uploadImage.imageUrl" />
+                    <el-icon :size="11" class="delete-image" @click="deleteImage(uploadImage.imagePath)">
+                        <CloseBold />
+                    </el-icon>
+                </div>
+            </div>
             <div class="chat-input-content">
                 <input @change="handleFileChange" ref="fileInputRef" type="file" multiple :accept="uploadFileType"
-                    style="display: none;">
-                <el-tooltip placement="top" effect="customized" content="每次最多上传3个文件(每个5MB),仅支持PDF,DOCX文件类型">
+                    style="display: none;" :disabled="uploadImage != undefined">
+                <el-tooltip placement="top" effect="customized" :content="uploadImage ? '请先删除图片才能上传文档':'每次最多上传3个文件(每个5MB),仅支持PDF,DOCX文件类型'">
                     <div class="upload-icon-box">
                         <img src="../assets/upload-icon.png" alt="" @click="triggerFileInput">
                     </div>
@@ -41,8 +59,8 @@
 <script setup lang="ts">
 import { CloseBold } from "@element-plus/icons-vue";
 import { ref, reactive } from 'vue'
-import { uploadDialogApi, deletefileApi, sendMessageApi, stopoutputApi } from '@/api/request'
-import type { kbFileListType } from "@/types";
+import { uploadDialogApi, deletefileApi, sendMessageApi, stopoutputApi, uploadImageApi, deleteImageApi } from '@/api/request'
+import type { ImageUploadType, kbFileListType } from "@/types";
 import { useUserStore } from "@/store/user";
 import { useChatStore } from "@/store/chat";
 import { validators } from '@/utils/validators'
@@ -51,6 +69,8 @@ import pdfIcon from '@/assets/pdf-icon.png'
 const userStore = useUserStore()
 const chatStore = useChatStore()
 const uploadFileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf'
+const uploadImageType = 'image/jpg,image/jpeg,image/png,image/webp'
+
 // 用户输入内容
 let userMessage = ref('')
 //键盘事件
@@ -87,10 +107,17 @@ const queryKb = () => {
 
 //临时存储上传的文件
 const uploadfileList = ref<kbFileListType>([])
+//临时存储上传的图片
+const uploadImage = ref<ImageUploadType>()
 //调用input上传
 const fileInputRef = ref<HTMLInputElement>()
+//调用imageInput上传
+const imageInputRef = ref<HTMLInputElement>()
 const triggerFileInput = () => {
     fileInputRef.value?.click()
+}
+const triggerImageInput = () => {
+    imageInputRef.value?.click()
 }
 
 //监听文件上传
@@ -135,6 +162,58 @@ const handleFileChange = async (e: Event) => {
         ElMessage('上传出错')
     }
 }
+//监听图片上传
+const handleImageChange = async (e: Event) => {
+    const input = e.target as HTMLInputElement
+    const files = input.files as FileList
+    if (files.length <= 0) return;
+    //如果没有登陆，禁止上传
+    if (!userStore.getUserInfo.token) {
+        ElMessage('请先登陆！')
+    }
+    //每次最多选择三个文件
+    if (files.length > 1) {
+        ElMessage('每次最多选择三个文件')
+        return
+    }
+    //上传图片，最多上传1个
+    if (uploadfileList.value.length >= 1) {
+        ElMessage('每次最多选择一张图片')
+        return
+    }
+    //过滤掉文件不是pdf和docx的，并且大于5mb的
+    const allowedTypes = ['image/jpg','image/jpeg', 'image/png', 'image/webp']
+    const formData = new FormData
+    const maxSize = 10 * 1024 * 1024
+    for (const file of files) {
+        if (!allowedTypes.includes(file.type)) {
+            ElMessage('请选择正确格式的图片')
+            return
+        } else if (file.size > maxSize) {
+            ElMessage('图片大小应该小于10MB')
+            return
+        } else {
+            formData.append('file', file)
+        }
+
+    }
+    //loading提示
+    const loading = ElLoading.service({
+        lock: true,
+        text: '文件上传中...',
+        background: 'rgba(0, 0, 0, 0.8)',
+    })
+    try {
+        const res = await uploadImageApi(formData)
+        console.log('图片上传')
+        console.log(res)
+        uploadImage.value = res.data
+        loading.close()
+    } catch (error) {
+        loading.close()
+        ElMessage('上传出错')
+    }
+}
 
 const deleteFile = async (docId: string) => {
     const loading = ElLoading.service({
@@ -151,6 +230,21 @@ const deleteFile = async (docId: string) => {
     }
 }
 
+const deleteImage = async (imagePath: string) => {
+    const loading = ElLoading.service({
+        lock: true,
+        text: '删除中...',
+        background: 'rgba(0, 0, 0, 0.8)',
+    })
+    try {
+        await deleteImageApi(imagePath)
+        uploadImage.value = undefined
+        loading.close()
+    } catch (error) {
+        loading.close()
+    }
+}
+
 const sendMessage = () => {
     //校验
     validators.isNotEmpty(userMessage.value, '请输入内容')
@@ -158,7 +252,8 @@ const sendMessage = () => {
         role: 'user',
         content: userMessage.value.trim(),
         ...(uploadfileList.value.length > 0 && { uploadFileList: uploadfileList.value }),
-        ...(uploadfileList.value.length > 0 && { displayContent: userMessage.value.trim() })
+        ...(uploadfileList.value.length > 0 && { displayContent: userMessage.value.trim() }),
+        ...(uploadImage.value && { uploadImage: uploadImage.value })
     })
     chatStore.addMessageList({
         role: 'assistant',
@@ -175,12 +270,14 @@ const sendMessage = () => {
         content: userMessage.value.trim(),
         sessionId: chatStore.getSessionId,
         uploadFileList: uploadfileList.value,
-        isKnowledgeBased: isKnowledgeBased.value
+        isKnowledgeBased: isKnowledgeBased.value,
+        uploadImage: uploadImage.value
     })
 
     //清空输入框和临时文件
     userMessage.value = ''
     uploadfileList.value.length = 0
+    uploadImage.value = undefined
 }
 
 //终止模型输出
@@ -212,7 +309,7 @@ const stopOutput = async () => {
         overflow: hidden;
 
         // 知识库问答
-        .el-button {
+        .button1 {
             width: fit-content;
             padding: initial;
             height: auto;
@@ -225,9 +322,32 @@ const stopOutput = async () => {
             padding: 7px;
 
             span {
-                font-size: 14px;
-                padding-left: 6px;
+                font-size: 13px;
+                padding: 0 6px;
                 color: v-bind('queryKbStyle.color');
+            }
+
+            img {
+                width: 15px;
+            }
+        }
+        // 上传图片
+        .button2 {
+            width: fit-content;
+            padding: initial;
+            height: auto;
+            border: 1px solid #eceff3;
+            border-radius: 20px;
+            background-color: #fff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            padding: 7px;
+
+            span {
+                font-size: 13px;
+                padding: 0 6px;
+                color: #d783af;
             }
 
             img {
@@ -241,6 +361,26 @@ const stopOutput = async () => {
             align-items: center;
             flex-wrap: wrap;
             padding-bottom: 15px;
+
+            .upload-image-item {
+                width: 50px;
+                height: 50px;
+                position: relative;
+                border-radius: 10px;
+                overflow: hidden;
+                padding: 3px;
+
+                img {
+                    width: 100%;
+                    object-fit: cover;
+                }
+
+                .delete-image {
+                    position: absolute;
+                    bottom: 2px;
+                    right: 4px;
+                }
+            }
 
             .upload-file-item {
                 display: flex;

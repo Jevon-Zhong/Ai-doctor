@@ -6,7 +6,7 @@
                 <p>{{ item.displayContent || item.content }}</p>
             </div>
             <!-- 展示文件 -->
-            <div class="file-view">
+            <div class="file-view" v-if="item.uploadFileList && item.uploadFileList?.length > 0">
                 <div class="file-item" v-for="(fileItem, fileIndex) in item.uploadFileList" :key="fileIndex">
                     <div class="file-icon">
                         <img :src="fileItem.fileType === 'PDF' ? pdfIcon : docxIcon" alt="">
@@ -17,7 +17,11 @@
                     </div>
                 </div>
             </div>
-            <!-- 模型消息 -->
+            <!-- 展示图片 -->
+            <div class="file-view" v-if="item.uploadImage">
+                <el-image :preview-src-list="[item.uploadImage.imageUrl]" style="width: 100px; height: 100px" :src="item.uploadImage.imageUrl" fit="cover" />
+            </div>
+                <!-- 模型消息 -->
             <div class="ai-message" v-if="item.role === 'assistant'">
                 <el-collapse v-if="item.readFileData">
                     <el-collapse-item :title="item.readFileData.promptInfo">

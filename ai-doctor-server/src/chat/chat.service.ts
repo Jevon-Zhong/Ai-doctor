@@ -1,4 +1,4 @@
-import { Injectable} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import { MessagesType, UploadFileListType } from './chat';
 import { Response } from 'express';
@@ -13,6 +13,8 @@ import { medAssistantDataPrompt } from './roleDefinition';
 import { toolsData } from './tools';
 import { FilemanagementService } from 'src/filemanagement/filemanagement.service';
 import { MyLogger } from 'utils/no-timestamp-logger';
+import { UploadImageDto } from './chat.dto';
+import { readFileSync } from 'fs';
 //创建请求对话的终止控制器
 const controllerMap = new Map<string, AbortController>()
 @Injectable()
@@ -72,7 +74,8 @@ export class ChatService {
         stream: Response, //流试响应对象
         sessionId?: Types.ObjectId,
         uploadFileList?: UploadFileListType[],
-        isKnowledgeBased?: boolean
+        isKnowledgeBased?: boolean,
+        uploadImage?: MessagesType['uploadImage']
     ) {
         //组合对话字段：用户发送给模型的对话类型
         const message: MessagesType = {
@@ -111,6 +114,14 @@ export class ChatService {
                 fileList: res.uploadFileList.map(item => item.fileName)
             }
         }
+
+        //如果用户携带图片
+        if (uploadImage) {
+            //禁用知识库回答
+            isKnowledgeBased = false
+            message.uploadImage = uploadImage
+        }
+
         // -----------请求数据库：获取历史对话，组合上下文，让模型具有记忆里
         //需要发送的模型的对话列表：历史对话 + 当前对话
         let historyConversationList: MessagesType[] = [
@@ -153,7 +164,8 @@ export class ChatService {
             sessionId,
             reddFileList,
             uploadFileList,
-            isKnowledgeBased
+            isKnowledgeBased,
+            uploadImage
         )
     }
 
@@ -165,14 +177,25 @@ export class ChatService {
         sessionId?: Types.ObjectId,
         readFileList?: MessagesType['readFileData'],
         uploadFileList?: UploadFileListType[],
-        isKnowledgeBased?: boolean
+        isKnowledgeBased?: boolean,
+        uploadImage?: MessagesType['uploadImage']
     ) {
         try {
             const controller = new AbortController
+            //存储模型返回的结果
+            let res: any
             if (sessionId) {
                 controllerMap.set(sessionId.toString(), controller)
             }
-            const res: any = await this.callingModel(messageList, isKnowledgeBased, controller)
+            //如果用户携带图片就调用多模态大模型
+            if (uploadImage) {
+                //图片转换base64
+                const imageUrlObj = this.encodeImage(`uploadImgs/${uploadImage.imagePath}`, uploadImage.mimeType)
+                res = await this.callingModelVl(messageList, imageUrlObj, controller)
+            } else {
+                res = await this.callingModel(messageList, isKnowledgeBased, controller)
+            }
+
             //如果用户携带文档对话，在此返回给前端
             if (uploadFileList && uploadFileList.length > 0) {
                 this.notifyStream(stream, readFileList)
@@ -281,7 +304,7 @@ export class ChatService {
         }
     }
 
-    //调用模型
+    //调用模型：文本
     async callingModel(
         messageList: MessagesType[],
         isKnowledgeBased?: boolean,
@@ -302,6 +325,42 @@ export class ChatService {
         return res
     }
 
+    //调用模型：多模态，图片理解
+    async callingModelVl(
+        messageList: MessagesType[],
+        imageUrlObj: any,
+        controller?: AbortController
+    ) {
+        const res = await this.openai.chat.completions.create({
+            model: "qwen3-vl-plus",  // 此处以qwen3-vl-plus为例，可按需更换模型名称。模型列表：https://help.aliyun.com/zh/model-studio/models
+            messages: [
+                {
+                    role: 'system',
+                    content: ''
+                },
+                {
+                    role: 'user',
+                    content: [
+                        imageUrlObj,
+                        { type: "text", text: messageList[messageList.length - 1].content },
+                    ]
+                }
+            ],
+            stream: true
+
+        }, { signal: controller?.signal }) //中断模型输出)
+        return res
+    }
+
+    //将图片转换base64编码。再交给多模态大模型
+    encodeImage(imagePath: string, mimeType: string) {
+        const imageFile = readFileSync(imagePath);
+        const base64Image = imageFile.toString('base64');
+        return {
+            type: 'image_url',
+            image_url: { "url": `data:${mimeType};base64,${base64Image}` },
+        }
+    }
     // 根据用户的问题，检索知识库
     async queryKb(
         stream: Response,

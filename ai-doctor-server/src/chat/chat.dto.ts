@@ -24,6 +24,24 @@ export class UploadFileDto {
     docId: string
 }
 
+//上传的图片字段类型
+export class UploadImageDto {
+    //图片路径
+    @IsString({ message: 'imagePath必须是字符串类型' })
+    @IsNotEmpty({ message: '图片路径不能为空' })
+    imagePath: string
+
+    //图片类型
+    @IsString({ message: 'mimeType必须是字符串类型' })
+    @IsNotEmpty({ message: '图片类型不能为空' })
+    mimeType: string
+
+    //图片地址
+    @IsString({ message: 'imageUrl必须是字符串类型' })
+    @IsNotEmpty({ message: '图片地址不能为空' })
+    imageUrl: string
+}
+
 //用户发送的消息字段
 export class SendMessageQueryDto {
     //用户发送的纯文本
@@ -47,13 +65,19 @@ export class SendMessageQueryDto {
 
     //是否基于知识库回答
     @IsOptional()
-    @IsBoolean({message: 'isKnowledgeBased必须是布尔值'})
+    @IsBoolean({ message: 'isKnowledgeBased必须是布尔值' })
     isKnowledgeBased?: boolean
+
+    //携带的图片对象
+    @IsOptional()
+    @ValidateNested({ each: true })
+    @Type(() => UploadImageDto)
+    uploadImage: UploadImageDto
 }
 
 //获取某个会话的对话数据传递的会话id
 export class SingleChatDataDto {
-    @IsString({message: 'sessionId必须是字符串'})
-    @IsNotEmpty({message: '对话id不能为空'})
+    @IsString({ message: 'sessionId必须是字符串' })
+    @IsNotEmpty({ message: '对话id不能为空' })
     sessionId: string
 }

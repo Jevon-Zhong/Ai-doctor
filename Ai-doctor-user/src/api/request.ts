@@ -1,6 +1,6 @@
 const baseUrl = 'http://127.0.0.1:3000'
 import axios from "axios"
-import type { UserRegisterType, ApiResponseType, ApiResponseErrorType, UserLoginType, UserInfoResType, kbFileListType, SendMessageType, AiMessageType, GetchatlistType, MessageListType } from '@/types/index'
+import type { UserRegisterType, ApiResponseType, ApiResponseErrorType, UserLoginType, UserInfoResType, kbFileListType, SendMessageType, AiMessageType, GetchatlistType, MessageListType, ImageUploadType } from '@/types/index'
 import { useUserStore } from "@/store/user"
 import { useChatStore } from "@/store/chat"
 import { useAppStore } from "@/store/app"
@@ -172,4 +172,14 @@ export const sendMessageApi = async (params: SendMessageType) => {
             }
         }
     }
+}
+
+//图片上传
+export const uploadImageApi = (params: FormData): Promise<ApiResponseType<ImageUploadType>> => {
+    return axiosInstance.post('/filemanagement/uploadimage', params)
+}
+
+//删除图片
+export const deleteImageApi = (imagePath: string): Promise<ApiResponseType<[]>> => {
+    return axiosInstance.delete(`/filemanagement/deleteimage/${imagePath}`)
 }

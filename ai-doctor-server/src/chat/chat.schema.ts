@@ -23,6 +23,22 @@ class ReadFileData {
     fileList: string[]
 }
 
+// 携带的图片对象字段结构
+@Schema({ _id: false }) //让数组里不要生成_id
+class ImageUrlObjType {
+    //图片路径
+    @Prop({ type: String, required: true })
+    imagePath: string
+
+    //图片类型
+    @Prop({ type: String, required: true })
+    mimeType: string
+
+    //图片地址
+    @Prop({ type: String, required: true })
+    imageUrl: string
+}
+
 //对话结构
 @Schema({ _id: false }) //让数组里不要生成_id
 class ChatMessage {
@@ -59,6 +75,10 @@ class ChatMessage {
     //阅读的文档或者阅读知识库
     @Prop({ type: ReadFileData })
     readFileData?: ReadFileData
+
+    //携带的图片对象
+    @Prop({type: ImageUrlObjType})
+    uploadImage?: ImageUrlObjType
 
 }
 
