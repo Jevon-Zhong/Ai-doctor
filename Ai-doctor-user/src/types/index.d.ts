@@ -38,6 +38,13 @@ export type kbFileListType = {
     fileSize: string,
 }[]
 
+//上传图片返回的字段
+export type ImageUploadType = {
+    imagePath: string,
+    mimeType: string,
+    imageUrl: string,
+}
+
 //用户上传的文档
 export type UploadFileListType = {
     fileName: string,//文件名称
@@ -58,7 +65,8 @@ export type MessageListType = {
         fileList: string[]//处理的文件列表
     },
     displayContent?: string,//用户原始问题
-    loadingCircle?: boolean//发送时等待模型回复的loading
+    loadingCircle?: boolean,//发送时等待模型回复的loading
+    uploadImage?:ImageUploadType //携带的图片
 }
 
 //用户发送消息传递的参数
@@ -66,7 +74,8 @@ export type SendMessageType = {
     content: string,
     sessionId: string,
     uploadFileList?: kbFileListType,
-    isKnowledgeBased?: boolean
+    isKnowledgeBased?: boolean,
+    uploadImage?:ImageUploadType //携带的图片
 }
 
 //模型返回的数据
