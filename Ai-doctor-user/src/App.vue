@@ -48,6 +48,10 @@ span {
   box-sizing: border-box;
 }
 
+:focus-visible {
+  outline: none;
+}
+
 /* 媒体查询 */
 @media (max-width: 1460px) {
   .chat-message {

@@ -19,10 +19,17 @@
         </div>
         <!-- 个人信息 -->
         <div class="user-profile">
-            <div class="avatar-username" v-if="userStore.getUserInfo.token">
-                <img :src="userStore.getUserInfo.avatar" alt="">
-                <span>{{ userStore.getUserInfo.phoneNumber }}</span>
-            </div>
+            <el-dropdown trigger="click" placement="top-start" v-if="userStore.getUserInfo.token">
+                <div class="avatar-username">
+                    <img :src="userStore.getUserInfo.avatar" alt="">
+                    <span>{{ userStore.getUserInfo.phoneNumber }}</span>
+                </div>
+                <template #dropdown>
+                    <el-dropdown-menu>
+                        <el-dropdown-item @click="logOut">退出登陆</el-dropdown-item>
+                    </el-dropdown-menu>
+                </template>
+            </el-dropdown>
             <el-button v-else type="primary" @click="appStore.setShowLoginPopup(true)">登陆</el-button>
             <el-button v-if="userStore.getUserInfo.token" type="primary"
                 @click="appStore.setKnowledgePopup(true)">知识库管理</el-button>
@@ -109,6 +116,13 @@ const deleteDialog = (sessionId: string) => {
             })
         })
 }
+
+const logOut = async () => {
+    userStore.logOut()
+    const res = await getChatListApi()
+    chatStore.setChatListData(res.data)
+    //如果pinia的sessionId有值，就获取当前对话下的数据
+}
 </script>
 
 <style scoped lang="less">
@@ -185,6 +199,7 @@ const deleteDialog = (sessionId: string) => {
             display: flex;
             align-items: center;
             padding-bottom: 20px;
+            cursor: pointer;
 
             img {
                 width: 30px;

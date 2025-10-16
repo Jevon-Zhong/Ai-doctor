@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { validators } from "@/utils/validators";
-import { userRegisterApi, userLoginApi, getChatListApi } from '@/api/request'
+import { userRegisterApi, userLoginApi, getChatListApi, singlechatdata } from '@/api/request'
 import { useUserStore } from "@/store/user";
 import { useAppStore } from "@/store/app";
 import { useChatStore } from "@/store/chat";
@@ -46,6 +46,19 @@ const userRegister = async () => {
   activeName.value = 'login'
 };
 
+//获取单个对话数据
+const getSinglechatdata = async () => {
+    const loading = ElLoading.service({
+        lock: true,
+        text: '加载中...',
+        background: 'rgba(0, 0, 0, 0.8)',
+    })
+    const res = await singlechatdata({ sessionId: chatStore.getSessionId })
+    console.log(res)
+    chatStore.setMessageList(res.data)
+    loading.close()
+}
+
 //登陆
 const userLogin = async () => {
   //校验
@@ -61,8 +74,14 @@ const userLogin = async () => {
   //登陆成功立马获取对话列表数据
   const res1 = await getChatListApi()
   chatStore.setChatListData(res1.data)
+  //如果pinia的sessionId有值，就获取当前对话下的数据
+  if (chatStore.getSessionId) {
+    await getSinglechatdata()
+    chatStore.setChatWelcome(false)
+  } else {
+    chatStore.setChatWelcome(true)
+  }
   appStore.setShowLoginPopup(false)
-  chatStore.setChatWelcome(true)
 };
 </script>
 
