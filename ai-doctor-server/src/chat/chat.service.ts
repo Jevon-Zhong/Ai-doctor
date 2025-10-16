@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import { MessagesType, UploadFileListType } from './chat';
 import { Response } from 'express';
@@ -83,7 +83,7 @@ export class ChatService {
             content
         }
         //阅读的文件列表：最后需要交给大模型的回复里
-        let reddFileList: MessagesType['readFileData']
+        let readFileList: MessagesType['readFileData']
         //判断用户是否携带文档
         if (uploadFileList && uploadFileList.length > 0) {
             //如果用户上传文档，禁用知识库回答
@@ -107,7 +107,7 @@ export class ChatService {
             //取出文件列表数据
             message.uploadFileList = res.uploadFileList
             //阅读的文件列表：最后需要交给大模型的回复里
-            reddFileList = {
+            readFileList = {
                 type: 'readDocument',
                 statusInfo: 'completed',
                 promptInfo: '文档阅读完毕',
@@ -162,7 +162,7 @@ export class ChatService {
             userId.toString(),
             stream,
             sessionId,
-            reddFileList,
+            readFileList,
             uploadFileList,
             isKnowledgeBased,
             uploadImage
@@ -488,5 +488,18 @@ export class ChatService {
                 message: '会话未找到， 停止失败'
             }
         }
+    }
+
+    //删除对话
+    async deleteDialog(userId: string, sessionId: string) {
+        //查找文件路径
+        console.log('path', userId, sessionId)
+        const fileRecord = await this.chatDataModel.findOne({ userId, _id: sessionId })
+        if (!fileRecord) throw new BadRequestException('删除失败，找不到对话')
+        //删除mongodb数据库文件
+        await this.chatDataModel.deleteMany({
+            _id: sessionId,
+            userId
+        })
     }
 }

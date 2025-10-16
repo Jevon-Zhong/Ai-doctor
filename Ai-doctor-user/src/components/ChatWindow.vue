@@ -19,9 +19,10 @@
             </div>
             <!-- 展示图片 -->
             <div class="file-view" v-if="item.uploadImage">
-                <el-image :preview-src-list="[item.uploadImage.imageUrl]" style="width: 100px; height: 100px" :src="item.uploadImage.imageUrl" fit="cover" />
+                <el-image :preview-src-list="[item.uploadImage.imageUrl]" style="width: 100px; height: 100px"
+                    :src="item.uploadImage.imageUrl" fit="cover" />
             </div>
-                <!-- 模型消息 -->
+            <!-- 模型消息 -->
             <div class="ai-message" v-if="item.role === 'assistant'">
                 <el-collapse v-if="item.readFileData">
                     <el-collapse-item :title="item.readFileData.promptInfo">
@@ -30,7 +31,7 @@
                         </div>
                     </el-collapse-item>
                 </el-collapse>
-                <div v-html="marked(item.content)" />
+                <div class="ai-message-p" v-html="marked(item.content)" />
                 <!-- 动画效果 -->
                 <div class="loading-circle" v-if="item.loadingCircle"></div>
             </div>
@@ -121,10 +122,12 @@ const chatStore = useChatStore()
     }
 
     .ai-message {
+        width: 100%;
         margin-top: 15px;
         background-color: #fff;
         padding: 10px;
         border-radius: 10px;
+        box-sizing: border-box;
 
         :deep(.el-collapse-item__title) {
             color: blue;

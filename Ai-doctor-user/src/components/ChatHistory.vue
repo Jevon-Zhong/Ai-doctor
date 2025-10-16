@@ -8,9 +8,12 @@
                 :style="{ backgroundColor: item.sessionId === chatStore.getSessionId ? '#f3f2ff' : '' }"
                 @click="handleSessionClick(item.sessionId)" v-for="(item, index) in chatStore.getChatListData"
                 :key="index">
-                <div class="dialog-list-item hidden-text"
+                <div class="dialog-list-item"
                     :style="{ color: item.sessionId === chatStore.getSessionId ? '#615ced' : '' }">
-                    {{ item.content }}
+                    <span class="hidden-text">{{ item.content }}</span>
+                    <el-icon class="delete-dialog" @click.stop="deleteDialog(item.sessionId)">
+                        <CloseBold />
+                    </el-icon>
                 </div>
             </div>
         </div>
@@ -31,7 +34,8 @@
 import { useAppStore } from "@/store/app";
 import { useUserStore } from "@/store/user";
 import { useChatStore } from "@/store/chat";
-import { getChatListApi, singlechatdata } from "@/api/request";
+import { deleteDialogApi, getChatListApi, singlechatdata } from "@/api/request";
+import { CloseBold } from "@element-plus/icons-vue";
 import { onMounted } from "vue";
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -72,6 +76,39 @@ const createSession = () => {
     chatStore.setSessionId('')
     chatStore.setMessageList([])
 }
+
+//删除对话
+const deleteDialog = (sessionId: string) => {
+    console.log(sessionId)
+    ElMessageBox.confirm(
+        '删除后，聊天记录将不可恢复?',
+        '确定删除对话？',
+        {
+            confirmButtonText: '删除',
+            cancelButtonText: '取消',
+            type: 'warning',
+        }
+    )
+        .then(async () => {
+            await deleteDialogApi(sessionId)
+            ElMessage({
+                type: 'success',
+                message: 'Delete completed',
+            })
+            if (sessionId === chatStore.getSessionId) {
+                chatStore.setSessionId('')
+                chatStore.setChatWelcome(true)
+            }
+            const res = await getChatListApi()
+            chatStore.setChatListData(res.data)
+        })
+        .catch(() => {
+            ElMessage({
+                type: 'info',
+                message: 'Delete canceled',
+            })
+        })
+}
 </script>
 
 <style scoped lang="less">
@@ -98,11 +135,23 @@ const createSession = () => {
     .dialog-outer {
         height: 75vh;
         overflow-y: auto;
+
         .dialog-list {
             margin: 10px;
             padding: 8px;
             border-radius: 8px;
-            .dialog-list-item {}
+
+            .dialog-list-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+
+                .delete-dialog {
+                    opacity: 0;
+                    cursor: pointer;
+                    transition: opacity 0.2s;
+                }
+            }
         }
     }
 
@@ -112,6 +161,12 @@ const createSession = () => {
 
         .dialog-list-item {
             color: #615ced;
+        }
+
+        .dialog-list-item:hover {
+            .delete-dialog {
+                opacity: 1;
+            }
         }
     }
 

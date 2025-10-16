@@ -183,3 +183,8 @@ export const uploadImageApi = (params: FormData): Promise<ApiResponseType<ImageU
 export const deleteImageApi = (imagePath: string): Promise<ApiResponseType<[]>> => {
     return axiosInstance.delete(`/filemanagement/deleteimage/${imagePath}`)
 }
+
+//删除对话
+export const deleteDialogApi = (sessionId: string): Promise<ApiResponseType<[]>> => {
+    return axiosInstance.delete(`/chat/deletedialog/${sessionId}`)
+}

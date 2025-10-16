@@ -206,8 +206,8 @@ export class FilemanagementController {
     ) {
         const { docId } = param
         console.log(docId)
-        // const userId = req.user.token
-        // return await this.filemanagementService.deleteFile(userId, docId)
+        const userId = req.user.token
+        return await this.filemanagementService.deleteFile(userId, docId)
     }
 
     //删除图片

@@ -294,12 +294,15 @@ const stopOutput = async () => {
     bottom: 0;
     right: 0;
     padding-bottom: 30px;
+    display: flex;
+    justify-content: center;
 
     .chat-input-flex {
+        width: 100%;
         display: flex;
         flex-direction: column;
         max-width: 1000px;
-        margin: 0 auto;
+        // margin: 0 auto;
         box-sizing: border-box;
         background-color: #fff;
         border: 1px solid #615ced;
@@ -368,7 +371,7 @@ const stopOutput = async () => {
                 position: relative;
                 border-radius: 10px;
                 overflow: hidden;
-                padding: 3px;
+                padding: 5px;
 
                 img {
                     width: 100%;
@@ -378,7 +381,8 @@ const stopOutput = async () => {
                 .delete-image {
                     position: absolute;
                     bottom: 2px;
-                    right: 4px;
+                    right: 0px;
+                    cursor: pointer;
                 }
             }
 

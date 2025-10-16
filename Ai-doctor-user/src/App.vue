@@ -13,6 +13,10 @@ body {
   background-color: #f6f7fb;
 }
 
+body::-webkit-scrollbar {
+  width: 0;
+}
+
 p,
 div,
 span {
@@ -21,6 +25,7 @@ span {
   padding: 0;
   display: block;
 }
+
 /* 文字提示 */
 .el-popper.is-customized {
   /* Set padding to ensure the height is 32px */
@@ -48,22 +53,27 @@ span {
   .chat-message {
     max-width: 900px !important;
   }
+
   .chat-input-flex {
     max-width: 900px !important;
   }
 }
+
 @media (max-width: 1160px) {
   .chat-message {
     max-width: 700px !important;
   }
+
   .chat-input-flex {
     max-width: 700px !important;
   }
 }
+
 @media (max-width: 1060px) {
   .chat-message {
     width: 700px !important;
   }
+
   .chat-input-flex {
     width: 700px !important;
   }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { SendMessageQueryDto, SingleChatDataDto } from './chat.dto';
 import { ChatService } from './chat.service';
@@ -61,6 +61,18 @@ export class ChatController {
         return await this.chatService.stopOutput(sessionId)
     }
 
-
+//对话框删除文件
+    @Delete('deletedialog/:sessionId')
+    @UseGuards(AuthGuard)
+    async deleteDialog(
+        @Req() req: { user: { token: string } },
+        // @Body() body: DeletefileDto
+        @Param() param: any
+    ) {
+        const { sessionId } = param
+        console.log(sessionId)
+        const userId = req.user.token
+        return await this.chatService.deleteDialog(userId, sessionId)
+    }
 
 }
