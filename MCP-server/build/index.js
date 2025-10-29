@@ -37,15 +37,22 @@ server.tool("crawlWeb", "爬取获取网页内容", {
 // Set up Express and HTTP transport
 const app = express();
 app.use(express.json());
-// Create a new transport for each request to prevent request ID collisions
-const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => crypto.randomUUID()
-});
-await server.connect(transport);
 app.post('/mcp', async (req, res) => {
+    console.log(req.headers);
+    // Create a new transport for each request to prevent request ID collisions
+    const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined
+    });
+    res.on('close', () => {
+        transport.close();
+    });
+    await server.connect(transport);
     await transport.handleRequest(req, res, req.body);
+    req.on('error', () => {
+        console.log('error');
+    });
 });
-const port = parseInt(process.env.PORT || '4000');
+const port = parseInt(process.env.PORT || '4002');
 app.listen(port, () => {
     console.log(`MCP Server running on http://localhost:${port}/mcp`);
 }).on('error', error => {
