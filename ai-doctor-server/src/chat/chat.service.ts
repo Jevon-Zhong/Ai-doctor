@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
-import { MessagesType, UploadFileListType } from './chat';
+import { MessagesType, toolResultType, UploadFileListType, toolUsingType } from './chat';
 import { Response } from 'express';
 import { Filemanagement } from 'src/filemanagement/filemanegement.schema';
 import { InjectModel } from '@nestjs/mongoose';
@@ -14,7 +14,17 @@ import { toolsData } from './tools';
 import { FilemanagementService } from 'src/filemanagement/filemanagement.service';
 import { MyLogger } from 'utils/no-timestamp-logger';
 import { UploadImageDto } from './chat.dto';
+import { MCP_CLIENT_TOKEN } from '../mcp/mcp.module'; // 导入令牌
 import { readFileSync } from 'fs';
+import { MCPClient } from 'utils/mcpClient';
+
+interface ExtendedDelta extends OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta {
+    reasoning_content?: string
+}
+
+interface Qwen3 extends OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming {
+    enable_thinking?: boolean
+}
 //创建请求对话的终止控制器
 const controllerMap = new Map<string, AbortController>()
 @Injectable()
@@ -31,6 +41,9 @@ export class ChatService {
 
         @InjectRedis()
         private readonly redis: Redis,
+
+        @Inject(MCP_CLIENT_TOKEN)
+        private readonly mcpClient: MCPClient,
 
         private configService: ConfigService,
 
@@ -72,6 +85,7 @@ export class ChatService {
         userId: Types.ObjectId,
         content: string,
         stream: Response, //流试响应对象
+        toolChoice?: string,
         sessionId?: Types.ObjectId,
         uploadFileList?: UploadFileListType[],
         isKnowledgeBased?: boolean,
@@ -161,6 +175,7 @@ export class ChatService {
             historyConversationList.slice(-21),//取最近的21条对话数据
             userId.toString(),
             stream,
+            toolChoice,
             sessionId,
             readFileList,
             uploadFileList,
@@ -174,6 +189,7 @@ export class ChatService {
         messageList: MessagesType[],
         userId: string,
         stream: Response,
+        toolChoice?: string,
         sessionId?: Types.ObjectId,
         readFileList?: MessagesType['readFileData'],
         uploadFileList?: UploadFileListType[],
@@ -193,7 +209,7 @@ export class ChatService {
                 const imageUrlObj = this.encodeImage(`uploadImgs/${uploadImage.imagePath}`, uploadImage.mimeType)
                 res = await this.callingModelVl(messageList, imageUrlObj, controller)
             } else {
-                res = await this.callingModel(messageList, isKnowledgeBased, controller)
+                res = await this.callingModel(messageList, toolChoice, isKnowledgeBased, controller)
             }
 
             //如果用户携带文档对话，在此返回给前端
@@ -201,34 +217,105 @@ export class ChatService {
                 this.notifyStream(stream, readFileList)
             }
 
+            //工具名称
+            let toolName = ''
             //存放拼接的新问题
             let toolCallArgsStr = ''
             //标记工具是否开始调用
             let isToolCallStarted = false
+            let isAnswering = false
+
+            let toolUsing: toolUsingType | undefined
 
             //模型回复的完整内容
             let assistantMessage = ''
             for await (const chunk of res) {
                 const chunkObj = chunk.choices[0].delta
                 console.log('模型输出---------')
-                console.log(JSON.stringify(chunkObj))
+                console.log(JSON.stringify(chunk))
+                //收集并拼接工具参数
+                if (chunkObj.tool_calls && chunkObj.tool_calls[0].function?.name) {
+                    toolName = chunkObj.tool_calls[0].function.name
+                    toolUsing = {
+                        toolStatus: '工具调用中',
+                        toolName: toolName,
+                        toolResult: ''
+                    }
+                    console.log('工具调用中', toolUsing)
+                    this.notifyStream(stream, toolUsing)
+                }
                 //判断用户是否选择知识库回答，也就是出发工具调用
                 if (chunkObj.tool_calls && chunkObj.tool_calls[0].function.arguments) {
                     toolCallArgsStr += chunkObj.tool_calls[0].function.arguments
                     isToolCallStarted = true
                 }
                 //判断工具回复结束，处理新问题
-                if (chunk.choices[0].finish_reason === 'stop' && isToolCallStarted) {
+                if (chunk.choices[0].finish_reason === 'tool_calls' || chunk.choices[0].finish_reason === 'stop' && isToolCallStarted) {
                     //取出新问题
                     const newQuestion = JSON.parse(toolCallArgsStr)
                     if (newQuestion && typeof newQuestion === 'object' && 'clarified_question' in newQuestion && newQuestion.clarified_question.trim() !== '') {
                         console.log('工具生成了新问题-----')
                         console.log(newQuestion.clarified_question)
+                        const result: any = await this.mcpClient.callTool(toolName, toolCallArgsStr);
+                        console.log('H300xxx', result)
+                        toolUsing = {
+                            toolStatus: '工具调用完毕',
+                            toolName: toolName,
+                            toolResult: result
+                        }
+                        this.notifyStream(stream, toolUsing)
                         //整理新问题，查询知识库
                         const res = await this.queryKb(stream, newQuestion.clarified_question, userId, messageList, readFileList)
                         assistantMessage = res.assistantMessage
                         readFileList = res.readFileList
-                    } else {
+                    } else if (toolName === 'crawlWeb') {
+                        let assistantMessageByCrawlWeb = ''
+                        const result: any = await this.mcpClient.callTool(toolName, toolCallArgsStr);
+                        toolUsing = {
+                            toolStatus: '工具调用完毕',
+                            toolName: toolName,
+                            toolResult: result
+                        }
+                        this.notifyStream(stream, toolUsing)
+                        //需要获取模型的最后一项内容，即用户的原始提问，要设置为下一次的displayContent
+                        const lastItem = messageList[messageList.length - 1]
+                        messageList.push({ role: 'user', content: result.content[0].text as string, displayContent: lastItem.content })
+                        const toolStream = await this.openai.chat.completions.create({
+                            // 您可以按需更换为其它 Qwen3 模型、QwQ模型或DeepSeek-R1 模型
+                            model: 'qwen-plus',
+                            messages: messageList,
+                            stream: true,
+                            enable_thinking: false
+                        } as Qwen3)
+                        //流式输出
+                        for await (const chunk of toolStream) {
+                            if (!chunk.choices?.length) {
+                                console.log('\nUsage:');
+                                console.log(chunk.usage);
+                                continue;
+                            }
+                            const delta: ExtendedDelta = chunk.choices[0].delta;
+                            // 收到content，开始进行回复
+                            if (delta.content !== undefined && delta.content) {
+                                if (!isAnswering) {
+                                    console.log('\n' + '='.repeat(20) + '调用工具后的回复' + '='.repeat(20) + '\n');
+                                    isAnswering = true;
+                                }
+                                console.log(JSON.stringify(chunk))
+                                const sentence = chunk.choices[0].delta.content
+                                assistantMessageByCrawlWeb += sentence
+                                const returnRes = {
+                                    role: 'assistant',
+                                    content: sentence
+                                }
+                                this.notifyStream(stream, returnRes)
+                                // process.stdout.write(delta.content);
+                                // answerContent += delta.content;
+                            }
+                        }
+                        assistantMessage = assistantMessageByCrawlWeb
+                    }
+                    else {
                         //整理新问题， 查询知识库
                         //工具没有生成新问题
                         const lastItem = messageList[messageList.length - 1]
@@ -255,6 +342,7 @@ export class ChatService {
             const assistantMessageObj: MessagesType = {
                 role: 'assistant',
                 content: assistantMessage,
+                ...(toolUsing && { toolUsing: toolUsing }),
                 ...(readFileList && { readFileData: readFileList })
             }
             //整理一轮新的对话
@@ -307,19 +395,31 @@ export class ChatService {
     //调用模型：文本
     async callingModel(
         messageList: MessagesType[],
+        toolChoice?: string,
         isKnowledgeBased?: boolean,
         controller?: AbortController
     ) {
+        let tool: string | object = 'auto'
+        if (toolChoice) {
+            tool = { "type": "function", "function": { "name": `${toolChoice}` } }
+        } else {
+            if (isKnowledgeBased) {
+                tool = { "type": "function", "function": { "name": "H300" } }
+            } else {
+                tool = 'none'
+            }
+        }
         const res = await this.openai.chat.completions.create({
             model: "qwen-plus",  //此处以qwen-plus为例，可按需更换模型名称。模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
             messages: [
                 { role: "system", content: medAssistantDataPrompt },
                 ...messageList
             ],
-            tools: toolsData,
+            tools: this.mcpClient.getTools(),
+            enable_thinking: false,
             stream: true,
-            tool_choice: isKnowledgeBased ? { "type": "function", "function": { "name": "H300" } } : 'none'
-        },
+            tool_choice: tool
+        } as Qwen3,
             { signal: controller?.signal } //中断模型输出
         )
         return res
@@ -449,6 +549,14 @@ export class ChatService {
         ])
         return {
             result: res
+        }
+    }
+
+    //获取工具列表
+    async getToollist() {
+        console.log('getTools', this.mcpClient.getTools())
+        return {
+            result: this.mcpClient.getTools()
         }
     }
 

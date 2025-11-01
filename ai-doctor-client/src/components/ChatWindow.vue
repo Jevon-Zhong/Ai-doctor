@@ -24,6 +24,13 @@
             </div>
             <!-- 模型消息 -->
             <div class="ai-message" v-if="item.role === 'assistant'">
+                <el-collapse v-if="item.toolUsing">
+                    <el-collapse-item :title="item.toolUsing.toolStatus + '：' + item.toolUsing.toolName">
+                        <div>
+                            {{ item.toolUsing.toolResult }}
+                        </div>
+                    </el-collapse-item>
+                </el-collapse>
                 <el-collapse v-if="item.readFileData">
                     <el-collapse-item :title="item.readFileData.promptInfo">
                         <div v-for="(listItem, listIndex) in item.readFileData.fileList" :key="listIndex">
@@ -46,7 +53,6 @@ import docxIcon from '@/assets/docx-icon.png'
 import pdfIcon from '@/assets/pdf-icon.png'
 import { marked } from 'marked';
 const chatStore = useChatStore()
-
 </script>
 
 <style scoped lang="less">

@@ -17,16 +17,17 @@ export class ChatController {
         @Body() body: SendMessageQueryDto,
         @Res() stream: Response
     ) {
-        const { content, uploadFileList, sessionId, isKnowledgeBased, uploadImage } = body
+        const { content, uploadFileList, sessionId, isKnowledgeBased, uploadImage, toolChoice } = body
         const userId = new Types.ObjectId(req.user.token)
         await this.chatService.combineConversation(
             userId,
             content,
             stream,
+            toolChoice,
             sessionId,
             uploadFileList,
             isKnowledgeBased,
-            uploadImage
+            uploadImage,
         )
     }
 
@@ -37,6 +38,15 @@ export class ChatController {
         @Req() req: { user: { token: string } }
     ) {
         return await this.chatService.getChatList(req.user.token)
+    }
+
+    //获取对话列表
+    @Get('gettoollist')
+    @UseGuards(AuthGuard)
+    async getToollist(
+        @Req() req: { user: { token: string } }
+    ) {
+        return  this.chatService.getToollist()
     }
 
     //获取某个会话的对话数据

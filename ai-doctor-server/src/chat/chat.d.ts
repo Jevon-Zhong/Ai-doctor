@@ -6,6 +6,23 @@ export interface UploadFileListType {
     docId: string,//文件id
 }
 
+//工具返回结果
+export interface toolResultType {
+    content: [
+        {
+            type: string,
+            text: string
+        }
+    ]
+}
+
+//工具返回结果
+export interface toolUsingType {
+    toolStatus: '工具调用中' | '工具调用完毕',
+    toolName: string,
+    toolResult: toolResult
+}
+
 //用户和模型对话结构
 export interface MessagesType {
     role: 'user' | 'assistant' | 'system',//角色
@@ -17,6 +34,7 @@ export interface MessagesType {
         promptInfo: string, //服务器返回的提示
         fileList: string[]//处理的文件列表
     },
+    toolUsing?: toolUsingType
     displayContent?: string//用户原始问题
     //携带的图片
     uploadImage?: {

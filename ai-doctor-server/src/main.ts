@@ -9,6 +9,7 @@ import { TransformInterceptor } from '../utils/transform.interceptor'
 import { MyLogger } from '../utils/no-timestamp-logger'
 import express from 'express';
 import { join } from 'path';
+import { MCP_CLIENT_TOKEN } from './mcp/mcp.module'; // 导入令牌
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: new MyLogger(),
@@ -31,7 +32,17 @@ async function bootstrap() {
   app.enableCors({
     origin: '*'
   })
+  
+  // 从依赖注入容器中获取mcpClient实例（与其他地方的实例一致）
+  const mcpClient = app.get(MCP_CLIENT_TOKEN);
   //监听3000
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000, async () => {
+    console.log('ai-doctor服务启动成功， 端口号是3000')
+    try {
+      await mcpClient.connectToServer()
+    } catch (error) {
+      console.error('mcp服务器连接失败', error)
+    }
+  });
 }
 bootstrap();

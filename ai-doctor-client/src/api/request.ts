@@ -100,12 +100,12 @@ export const getChatListApi = (): Promise<ApiResponseType<GetchatlistType[]>> =>
 }
 
 //获取某个对话的详细数据
-export const singlechatdata = (params: {sessionId: string}): Promise<ApiResponseType<MessageListType[]>> => {
-    return axiosInstance.get('/chat/singlechatdata', {params})
+export const singlechatdata = (params: { sessionId: string }): Promise<ApiResponseType<MessageListType[]>> => {
+    return axiosInstance.get('/chat/singlechatdata', { params })
 }
 
 //终止模型输出
-export const stopoutputApi = (params: {sessionId: string}): Promise<ApiResponseType<[]>> => {
+export const stopoutputApi = (params: { sessionId: string }): Promise<ApiResponseType<[]>> => {
     return axiosInstance.post('/chat/stopoutput', params)
 }
 
@@ -163,6 +163,15 @@ export const sendMessageApi = async (params: SendMessageType) => {
                 aiMessageObj.readFileData = aiMessage
             }
 
+            //取工具调用
+            if (aiMessage.toolName) {
+                aiMessageObj.toolUsing = {
+                    toolStatus: aiMessage.toolStatus,
+                    toolName: aiMessage.toolName,
+                    toolResult: aiMessage.toolResult
+                }
+            }
+
             //取模型回复的数据
             if (aiMessage.role === 'assistant') {
                 aiMessageObj.loadingCircle = false
@@ -187,4 +196,9 @@ export const deleteImageApi = (imagePath: string): Promise<ApiResponseType<[]>> 
 //删除对话
 export const deleteDialogApi = (sessionId: string): Promise<ApiResponseType<[]>> => {
     return axiosInstance.delete(`/chat/deletedialog/${sessionId}`)
+}
+
+//获取工具列表
+export const getToollistApi = (): Promise<ApiResponseType<MessageListType[]>> => {
+    return axiosInstance.get('/chat/gettoollist')
 }

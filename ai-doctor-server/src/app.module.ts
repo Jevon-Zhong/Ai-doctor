@@ -7,12 +7,14 @@ import { JwtModule } from '@nestjs/jwt';
 import { FilemanagementModule } from './filemanagement/filemanagement.module';
 import { ChatModule } from './chat/chat.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
+import { McpModule } from './mcp/mcp.module';
 @Module({
   //引入模块
   imports: [
     UserinfoModule,
     FilemanagementModule,
     ChatModule,
+    McpModule,
     //加载环境变量
     ConfigModule.forRoot({
       isGlobal: true,

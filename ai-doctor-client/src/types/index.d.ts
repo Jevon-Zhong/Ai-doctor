@@ -53,6 +53,13 @@ export type UploadFileListType = {
     docId: string,//文件id
 }
 
+//工具返回结果
+export type toolUsingType = {
+    toolStatus: '工具调用中' | '工具调用完毕' | undefined,
+    toolName: string,
+    toolResult: toolResult
+} | undefined
+
 //用户和模型的对话睡觉类型
 export type MessageListType = {
     role: 'user' | 'assistant',//角色
@@ -64,18 +71,20 @@ export type MessageListType = {
         promptInfo: string, //服务器返回的提示
         fileList: string[]//处理的文件列表
     },
+    toolUsing?: toolUsingType, //调用工具的显示
     displayContent?: string,//用户原始问题
     loadingCircle?: boolean,//发送时等待模型回复的loading
-    uploadImage?:ImageUploadType //携带的图片
+    uploadImage?: ImageUploadType //携带的图片
 }
 
 //用户发送消息传递的参数
 export type SendMessageType = {
     content: string,
     sessionId: string,
+    toolChoice: string,
     uploadFileList?: kbFileListType,
     isKnowledgeBased?: boolean,
-    uploadImage?:ImageUploadType //携带的图片
+    uploadImage?: ImageUploadType //携带的图片
 }
 
 //模型返回的数据
@@ -84,6 +93,9 @@ export type AiMessageType = {
     content: string,//用户提问或者模型回复的内容
     type: 'readDocument' | 'queryKB',
     statusInfo: 'inProgress' | 'completed', //进行中 ｜ 完毕
+    toolStatus?: '工具调用中' | '工具调用完毕' | undefined, //调用工具的状态
+    toolName?: string, //调用工具的名字
+    toolResult?: string, //调用工具的结果
     promptInfo: string, //服务器返回的提示
     fileList: string[]//处理的文件列表
 }

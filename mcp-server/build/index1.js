@@ -18,7 +18,7 @@ const transports = {};
 app.post('/mcp', async (req, res) => {
     // Check for existing session ID
     const sessionId = req.headers['mcp-session-id'];
-    console.log('sessionId', sessionId);
+    // console.log('sessionId', sessionId)
     let transport;
     if (sessionId && transports[sessionId]) {
         // Reuse existing transport

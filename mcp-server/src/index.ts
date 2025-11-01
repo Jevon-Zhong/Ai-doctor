@@ -1,5 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { intentUnderstandingPrompt } from './toolprompt.js';
 import express from 'express';
 import { z } from 'zod';
 import { crawlWebFn } from './crawlWeb.js';
@@ -51,6 +52,24 @@ app.post('/mcp', async (req, res) => {
                 };
             }
         },
+    );
+
+    // 将原function calling， 改成mcp的形式，注册一个生成clarified_question的工具,
+    // 即让用户根据意图返回参数，这个参数就是我们想要的数据
+    server.tool(
+        "H300",
+        intentUnderstandingPrompt,
+        {
+            clarified_question: z.string().describe('如果问题存在续问，结合上下文生成完整问题，若无续问，忽略此字段')
+        },
+        async ({ clarified_question }) => ({
+            content: [
+                {
+                    type: "text",
+                    text: clarified_question,
+                },
+            ],
+        }),
     );
 
     res.on('close', () => {

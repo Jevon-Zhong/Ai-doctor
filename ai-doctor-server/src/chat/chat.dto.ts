@@ -57,6 +57,12 @@ export class SendMessageQueryDto {
     @Type(() => UploadFileDto)//把数组里的一些转换为UploadFileDtio的实例，否则会导致嵌套字段无效
     uploadFileList?: UploadFileDto[]
 
+    //选择的工具
+    @IsOptional()
+    @IsString({ message: 'toolChoice必须是字符串类型' })
+    // @ArrayNotEmpty({ message: '上传的文件不能为空' })
+    toolChoice: string
+
     //对话id
     // @IsString({ message: 'sessionId必须是字符串类型' })
     // @IsNotEmpty({ message: 'sessionId不能为空' })

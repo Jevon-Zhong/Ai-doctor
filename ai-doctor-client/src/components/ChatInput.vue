@@ -2,18 +2,22 @@
     <div class="chat-input">
         <div class="chat-input-flex">
             <div style="display: flex;" v-if="!uploadImage && uploadfileList.length <= 0">
-                <el-button class="button1" style="margin-right: 10px;" @click="queryKb" v-if="uploadfileList.length <= 0">
+                <el-button class="button1" style="margin-right: 10px;" @click="queryKb"
+                    v-if="uploadfileList.length <= 0">
                     <img src="../assets/zhishiku.png" alt="">
                     <span>知识库问答</span>
                 </el-button>
                 <input @change="handleImageChange" ref="imageInputRef" type="file" multiple :accept="uploadImageType"
                     style="display: none;">
                 <el-tooltip placement="top" effect="customized" content="上传一张不超过10M的JPG/JEPG/PNG/WEBP的图片">
-                    <el-button class="button2" @click="triggerImageInput">
+                    <el-button style="margin-right: 10px;" class="button2" @click="triggerImageInput">
                         <img src="../assets/baogaodan.png" alt="">
                         <span>上传报告单/药品/CT</span>
                     </el-button>
                 </el-tooltip>
+                <el-select clearable placement="top" v-model="toolName"  placeholder="MCP" style="width: 150px;">
+                    <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
+                </el-select>
             </div>
             <div class="upload-file-list" v-if="uploadfileList.length > 0">
                 <div class="upload-file-item" v-for="(item, index) in uploadfileList" :key="index">
@@ -38,7 +42,8 @@
             <div class="chat-input-content">
                 <input @change="handleFileChange" ref="fileInputRef" type="file" multiple :accept="uploadFileType"
                     style="display: none;" :disabled="uploadImage != undefined">
-                <el-tooltip placement="top" effect="customized" :content="uploadImage ? '请先删除图片才能上传文档':'每次最多上传3个文件(每个5MB),仅支持PDF,DOCX文件类型'">
+                <el-tooltip placement="top" effect="customized"
+                    :content="uploadImage ? '请先删除图片才能上传文档' : '每次最多上传3个文件(每个5MB),仅支持PDF,DOCX文件类型'">
                     <div class="upload-icon-box">
                         <img src="../assets/upload-icon.png" alt="" @click="triggerFileInput">
                     </div>
@@ -59,7 +64,7 @@
 <script setup lang="ts">
 import { CloseBold } from "@element-plus/icons-vue";
 import { ref, reactive } from 'vue'
-import { uploadDialogApi, deletefileApi, sendMessageApi, stopoutputApi, uploadImageApi, deleteImageApi } from '@/api/request'
+import { uploadDialogApi, deletefileApi, sendMessageApi, stopoutputApi, uploadImageApi, deleteImageApi, getToollistApi } from '@/api/request'
 import type { ImageUploadType, kbFileListType } from "@/types";
 import { useUserStore } from "@/store/user";
 import { useChatStore } from "@/store/chat";
@@ -92,6 +97,7 @@ const isKnowledgeBased = ref(false)
 //点击知识库按钮
 const queryKb = () => {
     isKnowledgeBased.value = !isKnowledgeBased.value
+    toolName.value = ''
     if (isKnowledgeBased.value) {
         //选中
         queryKbStyle.backgroundColor = '#597CEE'
@@ -182,7 +188,7 @@ const handleImageChange = async (e: Event) => {
         return
     }
     //过滤掉文件不是pdf和docx的，并且大于5mb的
-    const allowedTypes = ['image/jpg','image/jpeg', 'image/png', 'image/webp']
+    const allowedTypes = ['image/jpg', 'image/jpeg', 'image/png', 'image/webp']
     const formData = new FormData
     const maxSize = 10 * 1024 * 1024
     for (const file of files) {
@@ -269,6 +275,7 @@ const sendMessage = () => {
     sendMessageApi({
         content: userMessage.value.trim(),
         sessionId: chatStore.getSessionId,
+        toolChoice: toolName.value,
         uploadFileList: uploadfileList.value,
         isKnowledgeBased: isKnowledgeBased.value,
         uploadImage: uploadImage.value
@@ -284,6 +291,22 @@ const sendMessage = () => {
 const stopOutput = async () => {
     await stopoutputApi({ sessionId: chatStore.sessionId })
 }
+
+//工具选择
+const toolName = ref('')
+const options: any = ref([])
+
+const getToollist = async () => {
+    const res = await getToollistApi()
+    const toolListOption: any = []
+    res.data.forEach((item: any) => {
+        toolListOption.push({ value: item.function.name, label: item.function.name })
+    })
+    options.value = toolListOption.filter((item: any) => {
+        return item.value !== 'H300'
+    })
+}
+getToollist()
 </script>
 
 <style scoped lang="less">
@@ -334,6 +357,7 @@ const stopOutput = async () => {
                 width: 15px;
             }
         }
+
         // 上传图片
         .button2 {
             width: fit-content;
