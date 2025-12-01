@@ -156,6 +156,7 @@ export const sendMessageApi = async (params: SendMessageType) => {
             //取会话id
             if (aiMessage.role === 'sessionId') {
                 chatStore.setSessionId(aiMessage.content)
+                chatStore.getChatListData[0].sessionId = aiMessage.content
             }
 
             //取文档或知识库的提示

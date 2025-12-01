@@ -70,6 +70,7 @@ const getSinglechatdata = async () => {
 }
 
 const handleSessionClick = async (sessionId: string) => {
+    console.log('sessionId', sessionId)
     if (chatStore.disabledStatus) return
     chatStore.setChatWelcome(false)
     chatStore.sessionId = sessionId
@@ -108,6 +109,7 @@ const deleteDialog = (sessionId: string) => {
             }
             const res = await getChatListApi()
             chatStore.setChatListData(res.data)
+            chatStore.setMessageList([])
         })
         .catch(() => {
             ElMessage({
