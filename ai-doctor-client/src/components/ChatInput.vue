@@ -15,7 +15,7 @@
                         <span>上传报告单/药品/CT</span>
                     </el-button>
                 </el-tooltip>
-                <el-select clearable placement="top" v-model="toolName"  placeholder="MCP" style="width: 150px;">
+                <el-select clearable placement="top" v-model="toolName" placeholder="MCP" style="width: 150px;">
                     <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
                 </el-select>
             </div>
@@ -162,6 +162,7 @@ const handleFileChange = async (e: Event) => {
     try {
         const res = await uploadDialogApi(formData)
         uploadfileList.value = res.data
+        console.log("上传文件", uploadfileList.value)
         loading.close()
     } catch (error) {
         loading.close()
@@ -251,10 +252,17 @@ const deleteImage = async (imagePath: string) => {
     }
 }
 
-const sendMessage = () => {
+const sendMessage = async () => {
     //校验
     validators.isNotEmpty(userMessage.value, '请输入内容')
     chatStore.addMessageList({
+        role: 'user',
+        content: userMessage.value.trim(),
+        ...(uploadfileList.value.length > 0 && { uploadFileList: [...uploadfileList.value] }),
+        ...(uploadfileList.value.length > 0 && { displayContent: userMessage.value.trim() }),
+        ...(uploadImage.value && { uploadImage: uploadImage.value })
+    })
+    console.log({
         role: 'user',
         content: userMessage.value.trim(),
         ...(uploadfileList.value.length > 0 && { uploadFileList: uploadfileList.value }),
@@ -272,7 +280,7 @@ const sendMessage = () => {
     if (!chatStore.getSessionId) {
         chatStore.unshiftChatListData({ sessionId: '', content: userMessage.value.trim() })
     }
-    sendMessageApi({
+    await sendMessageApi({
         content: userMessage.value.trim(),
         sessionId: chatStore.getSessionId,
         toolChoice: toolName.value,
