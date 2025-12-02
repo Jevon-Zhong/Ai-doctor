@@ -4,7 +4,7 @@ export const toolsData: any = [
     {
         "type": "function",
         "function": {
-            "name": "H300",
+            "name": "getIntent",
             "description": intentUnderstandingPrompt,
             "parameters": {
                 "type": "object",

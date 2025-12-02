@@ -257,7 +257,7 @@ export class ChatService {
                         console.log('工具生成了新问题-----')
                         console.log(newQuestion.clarified_question)
                         const result: any = await this.mcpClient.callTool(toolName, toolCallArgsStr);
-                        console.log('H300xxx', result)
+                        console.log('getIntentxxx', result)
                         toolUsing = {
                             toolStatus: '工具调用完毕',
                             toolName: toolName,
@@ -345,6 +345,7 @@ export class ChatService {
                 ...(toolUsing && { toolUsing: toolUsing }),
                 ...(readFileList && { readFileData: readFileList })
             }
+            console.log('模型回复的数据', assistantMessageObj)
             //整理一轮新的对话
             const conversationPair: MessagesType[] = [messageList[messageList.length - 1], assistantMessageObj]
             //存储数据库
@@ -357,7 +358,7 @@ export class ChatService {
                 //同步更新redis
                 const redisKey = `chat_history:${userId}:${newChat._id}`
                 await this.redis.set(redisKey, JSON.stringify(conversationPair), 'EX', 10800)
-
+                console.info('no sessionId' + newChat._id)
                 //返回对话id给前端
                 this.notifyStream(stream, {
                     role: 'sessionId',
@@ -365,6 +366,7 @@ export class ChatService {
                     modelPromt: '新会话id已创建，请保存会话id'
                 })
             } else {
+                console.info('sessionId' + sessionId)
                 //不是新对话，是在历史对话上接着询问的
                 await this.chatDataModel.updateOne(
                     { userId, _id: sessionId },
@@ -404,7 +406,7 @@ export class ChatService {
             tool = { "type": "function", "function": { "name": `${toolChoice}` } }
         } else {
             if (isKnowledgeBased) {
-                tool = { "type": "function", "function": { "name": "H300" } }
+                tool = { "type": "function", "function": { "name": "getIntent" } }
             } else {
                 tool = 'none'
             }
