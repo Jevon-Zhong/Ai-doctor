@@ -163,7 +163,13 @@
    npm run dev
    ```
 
-   
+
+
+## 🔑 **License**
+
+本项目采用 [MIT License](https://github.com/JustForSO/Sentra-Agent/blob/main/LICENSE) 开源协议。
+
+你可以自由地使用、修改、分发本项目，但是禁止商业化。
 
 
 
